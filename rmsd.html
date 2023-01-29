@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laura</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="prism.css" rel="stylesheet" />
+    <script src="prism.js"></script>
+</head>
+<body>
+    <div class="menuSuperior">
+        <img src="" alt="">
+        <h3>Cuaderno Ingeniería de Proteínas</h3>
+    </div>
+    <div class="contenedorPrincipal">
+        <div class="columnaIzquierda">
+            <div class="fixed">
+                <h4>Cuaderno Ingeniería de Proteínas</h4>
+                <a href="index.html">1. Revisión bibliográfica</a>
+                <a href="formato.html">2. Discriminar formato fichero y extraer secuencia</a>
+                <a href="parsing.html">3. Parsing ficheros PDB</a>
+                <a href="visualizacion.html">4. Visualización de las estructuras </a>
+                <a href="carbonosalfa.html">5. Carbonos alfa </a>
+                <a href="rama.html">6. Diagrama de Ramachandran</a>
+                <a href="estereo.html">7. Estereodiagrama</a>
+                <a href="alinearz.html">8. Alinear Z</a>
+                <a href="rmsd.html" class="activo">9. RMSD</a>
+                <a href="distorsion.html">10. Distorsiones estéricas </a>
+                <a href="disulfuro.html">11. Puentes disulfuro </a>
+            </div>
+        </div>
+        <div class="columnaCentro ERROR">
+            <h1>RMSD</h1>
+            <h5>Desarrolle una aplicación que permita calcular el RMSD correspondiente a las tres cisteínas de la proteína asignada (pueden emplearse también serinas) 
+                y elabore un informe en que se interpreten en términos estructurales los resultados obtenidos mediante comparación de las imágenes de cada una de las cisteínas empleadas.</h5>
+            <h2>1. Concepto de RMSD</h2>
+            <p>Esta actividad pretende calcular el RMSD de tres cisteínas del receptor del glucagón para ver cuales se parecen más entre sí geométricamente.</p>
+            <br>
+            <p>Imaginemos que estamos comparando A con otra proteína B. Para ello, lo primero que tenemos que hacer es superponerlas y para ello lo que tenemos que hacer es girar la proteína. Esto es muy complicado por lo que para facilitarlo, se creó un algoritmo de superposición. 
+            Partimos de una tabla de átomos y los enfrentamos unos con otros y medimos las distancias entre los átomos. En la diagonal, la distancia será 0 porque la distancia de un átomo consigo mismo es 0.</p>
+            <br>
+            <p>En este programa, en primer lugar se crea una tabla con las distancias entre los átomos de una Cys de nuestra proteína y otra tabla equivalente para otras dos Cys. En total tendremos 3 tablas. 
+            Son tablas cuadradas porque tienen el mismo número de filas y de columnas. Ahora lo que se hace es comparar estas distancias entre sí para ver las similitudes entre las Cys. Para ello se utiliza el ROOT MEAN SQUARE DEVIATION (RMSD). Lo que hace el RMSD es restar las 
+            distancias de las distintas tablas obtenidas antes y las eleva al cuadrado para evitar valores negativos. </p>
+            <br>
+            <p>La fórmula que del RMSD es la siguiente:</p>
+            <div class="imagenes"><img src="formulaRMSD1.png" alt="" width=400></div>
+            <h4 class="pieImg">Fórmula del RMSD</h4> 
+            <p>En esta fórmula, "Dij" es la distancia interatómica entre dos átomos "i" y "j" de la primera Cys y "Dij'"" es la distancia interatómica entre los mismos átomos de la segunda Cys. Por otro lado, "n" es el número total de elementos que se tienen en cuenta en la comparación. </p>
+            <h2>2. Función RMSD</h2>
+            <p>He creado dos funciones, una que sea capaz de crear una matriz que contenga las diferencias de distancias entre los átomos a partir de un Tpuntos (puntos) y una segunda función que calcule el RMSD a partir de las matrices creadas en la primera función.</p>
+            <p><b>2.1. Función crearmatricesdistancia</b></p>
+            <p>Esta función tiene como argumento de entrada una variable de tipo TPuntos que contendrá las coordenadas de distintos átomos de un residuo. A partir de estas coordenadas, se generará una matriz (array of array of real) que contendrá las distancias entre los distintos átomos del mismo residuo.</p>
+            <pre class="language-pascal"><code>
+Function crearmatrizdistancias(puntos:TPuntos):matrizdistancias;
+var
+    i, j, n: integer;
+    matriz:matrizdistancias;
+begin
+    n:=length(puntos);
+    setlength(matriz, n, n);
+    for i:=0 to n-1 do
+    begin
+        for j:=0 to n-1 do
+        begin
+            matriz[i,j]:=distancia3D(puntos[i],puntos[j]);
+        end;
+    end;
+    result:=matriz;
+end;
+            </code></pre>
+            <p><b>2.1. Función RMSD</b></p>
+            <p>Esta función tiene como argumentos de entrada dos matrices (dist1 y dist2) que representan las matrices creadas con la función anterior. "Dist1" corresponde a un residuo y "Dist2" a otro residuo con el que se quiere comparar Dist1. Esta función recorre las matrices y halla el RMSD correspondiente utilizando la fórmula del RMSD:</p>
+            <pre class="language-pascal"><code>
+Function RMSD (dist1,dist2:matrizdistancias):real;
+var
+    suma:real;
+    i, j, n: integer;
+begin
+    suma:=0;
+    n:=high(dist1);
+    for i:=0 to n do
+    begin
+        for j:=0 to n do
+        begin
+            suma:=suma+sqr(dist1[i,j]-dist2[i,j]);
+        end;
+    end;
+    result:=sqrt(suma/n);
+end; 
+
+            </code></pre>
+            <h2>3. Procedimiento RMSD</h2>
+            <p>A continuación se desarrolla un procedimiento en Lazarus para introducir los datos necesarios para calcular el RMSD y que se muestre en la aplicación desarrollada. 
+                Este procedimiento busca dentro del TPDB las Cys. Cuando encuentra la primera Cys almacena sus coordenadas en la matriz "puntos". Se crean 3 matrices distintas, 
+                una para cada residuo de Cys. Cuando ya se han detectado las tres primeras Cys, el programa rellena otra matriz, la "RMSDmatriz" que contendrá los RMSD calculados entre los 3 residuos entre sí, es decir, entre el 1º y el 2º, entre el 1º y el 3º y entre el 2º y el 3º. Por último, se muestran estos valores en distintos Edits.</p>
+            <pre class="language-pascal"><code>
+procedure TForm1.Button2Click(Sender: TObject);
+var
+  j, k,c,nRes, contador:integer;
+  D:array of array of array of real;
+  puntos:Tpuntos;
+  RMSDmatriz:array of array of real;
+begin
+    nRes:=3;
+    contador:=0;
+    setlength(D,nRes,nRes);
+    setlength(RMSDmatriz,nRes,nRes);
+    for j:=0 to p.NumResiduos-1 do
+    begin
+      if nRes=contador then break;
+      if (P.Res[j].ID3='CYS') then
+          begin
+              setlength(puntos,P.Res[j].AtmN-P.Res[j].atm1);
+              for k:=P.Res[j].atm1 to P.Res[j].AtmN do
+              begin
+                c:=k-P.Res[j].atm1;
+                puntos[c]:=P.Atm[k].Coor;
+              end;
+           D[contador]:=crearmatrizdistancias(puntos);
+           Finalize(puntos);
+           contador:=contador+1;
+          end;
+    end;
+    for j:=0 to nRes-1 do
+    begin
+      for k:=0 to nRes-1 do
+      begin
+        RMSDmatriz[j,k]:=RMSD(D[j],D[k]);
+      end;
+    end;
+    Edit2.Text:=formatfloat('0.000',RMSDmatriz[0,1]);
+    Edit3.Text:=formatfloat('0.000',RMSDmatriz[0,2]);
+    Edit4.Text:=formatfloat('0.000',RMSDmatriz[1,2]);
+end;
+            </code></pre>
+            <h2>4. Visualización del programa</h2>
+            <p>A continuación se muestra el funcionamiento del programa:</p>
+            <video src="videormsd.mov" alt="" class="anchoCompleto" controls></video>
+            <h2>5. Interpretación de resultados</h2>
+            <p>Cuanto menor es el valor del RMSD, mayor es el parecido geométrico entre los dos residuos. Como se puede observar, la 1ª y la 2ª Cys son las que poseen un valor de RMSD menor mientras que la 1ª y la 3ª Cys son las que presentan un valor de RMSD mayor por lo que la 1ª y la 2ª se parecerán más entre sí mientras que la 3ª Cys es la más diferente.</p>
+            <br>
+            <p>La 1ª Cys corresponde a la Cys4, la 2ª a la Cys19 y la 3ª a la Cys43:</p>
+            <div class="tripleimagen">
+                <img src="cys4rot 2.jpg" alt="" width=100>
+                <img src="cys19rot 2.jpg" alt="" width=100>
+                <img src="cys43rot 2.jpg" alt="" width=100>
+            </div>    
+            
+            <h4 class="pieImg">De izquierda a derecha, Cys4, Cys19 y Cys43.</h4> 
+            <p>Como se puede observar en la imagen, la Cys4 y la Cys19 son entre sí más parecidas mientras que la Cys43 parece la más alejada estructuralmente.</p>
+        </div>
+        
+    </div>
+    <div class="barraCompleta">
+        <div class="contenidoBarra2">
+            <a href="alinearz.html"><div class="anterior">
+                <img src="flechaIzquierdaBlanca.png" alt="flechita siguiente" class="iconoFlechaAnterior">
+                <div class="textoBarra">
+                    <p>Anterior</p>
+                    <h2>Alinear Z</h2>
+                </div>
+            </div></a>
+            <a href="distorsion.html"><div class="siguiente">
+                <div class="textoBarra">
+                    <p>Siguiente</p>
+                    <h2>Distorsiones estéricas</h2>
+                </div>
+                <img src="flechaDerechaBlanca.png" alt="flechita siguiente" class="iconoFlechaSiguiente">
+            </div></a>
+        </div>
+    </div>
+</body>
+</html>

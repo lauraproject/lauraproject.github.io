@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laura</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="prism.css" rel="stylesheet" />
+    <script src="prism.js"></script>
+</head>
+<body>
+    <div class="menuSuperior">
+        <img src="" alt="">
+        <h3>Cuaderno Ingeniería de Proteínas</h3>
+    </div>
+    <div class="contenedorPrincipal">
+        <div class="columnaIzquierda">
+            <div class="fixed">
+                <h4>Cuaderno Ingeniería de Proteínas</h4>
+                <a href="index.html">1. Revisión bibliográfica</a>
+                <a href="formato.html">2. Discriminar formato fichero y extraer secuencia</a>
+                <a href="parsing.html">3. Parsing ficheros PDB</a>
+                <a href="visualizacion.html">4. Visualización de las estructuras </a>
+                <a href="carbonosalfa.html">5. Carbonos alfa </a>
+                <a href="rama.html">6. Diagrama de Ramachandran</a>
+                <a href="estereo.html">7. Estereodiagrama</a>
+                <a href="alinearz.html" class="activo">8. Alinear Z</a>
+                <a href="rmsd.html">9. RMSD</a>
+                <a href="distorsion.html">10. Distorsiones estéricas </a>
+                <a href="disulfuro.html">11. Puentes disulfuro </a>
+            </div>
+        </div>
+        <div class="columnaCentro">
+            <h1>Alinear Z</h1>
+            <h5>Proyecte en el plano cartesiano las posiciones de los Ca de un fragmento definido de la proteína asignada, 
+                asumiendo como Z el eje perpendicular al plano del papel. Deduzca a continuación la transformación necesaria para 
+                que los puntos primero y último se superpongan en la nueva proyección y recalcule y dibuje las nuevas coordenadas 
+                para los ocho restantes carbonos. Utilizar RASMOL (o el visor equivalente que se emplee) para comprobar la corrección 
+                de la transformación realizada. Explique con detalle el procedimiento seguido, haciendo énfasis en la determinación del 
+                signo de cada giro e incluya en el informe algunas de las imágenes más relevantes.</h5>
+            <p>Este programa además de proyectar en el plano cartesiano las posiciones de los C alfa de un fragmento definido de la proteína asignada asumiendo como Z el eje perperdicular al plano del papel, 
+            debe permitir que el primer C alfa y el último C alfa del fragmento peptídico se superpongan para que cuando se proyecten el resto de puntos en el plano XY, estos acaben y empiecen en el mismo punto.</p>
+            <h2>1. Funciones traslación y giros</h2>
+            <p>Considerando un punto P1 y un punto P2, el primer paso es trasladar P1 al origen. En segundo lugar, hay que girar sobre el eje X para llevar P2 al eje XZ. Y, el tercer paso es producir una rotación sobre el eje OY para P2 al plano Z. Por tanto, la función alinear_ejeZ utiliza las funciones traslación, Giro OX y Giro OY. La representación inicial es la siguiente:</p>
+            <div class="imagenes"><img src="alinearzoriginal.png" alt="" width=400></div> 
+            <p><b>1.1. Función traslación</b></p>    
+            <p>En esta función se traslada el primer C alfa al origen del eje de coordenadas, es decir, al punto (0,0,0) y para ello, habrá que restar las coordenadas de P1 al propio P1. Como consecuencia, también es necesario trasladar P2 por lo que se restarán las coordenadas de P2 a P1. La representación quedaría así:</p>
+            <div class="imagenes"><img src="traslacion.png" alt="" width=400></div>
+            <p>Se realiza una función de traslación para trasladar un punto, un array de puntos y un PDB:</p>
+            <pre class="language-pascal"><code> 
+//TRASLACION DE UN PUNTO EN EL ESPACIO  
+Function traslacion(dx,dy,dz:real;v:Tpunto):Tpunto; 
+begin
+    traslacion.X:=V.X+dx;
+    traslacion.Y:=V.Y+dy;
+    traslacion.Z:=V.Z+dz;
+end;
+//TRASLACION DE UN ARRAY DE PUNTOS
+Function traslacion(dx,dy,dz:real;puntos:Tpuntos):Tpuntos;
+var
+    salida:TPuntos;
+    j:integer;
+    begin
+        setlength(salida,high(puntos)+1); 
+        for j:=0 to high(puntos) do
+        begin
+            salida[j].x:=puntos[j].x+dx; 
+            salida[j].y:=puntos[j].y+dy;
+            salida[j].z:=puntos[j].z+dz;
+        end;
+    result:=salida;
+    end;
+//FUNCION DE TRASLACION DE UN PDB  
+procedure traslacion(dx,dy,dz:real; var P:TPDB);
+var
+    j:integer;
+    begin
+    for j:=1 to P.NumFichas do
+        begin
+            P.Atm[j].Coor.X:=P.Atm[j].Coor.X+dx;
+            P.Atm[j].Coor.Y:=P.Atm[j].Coor.Y+dy;
+            P.Atm[j].Coor.Z:=P.Atm[j].Coor.Z+dz;
+        end;
+    end;
+            </code></pre>
+            <p><b>1.2. Función giro OX</b></p>   
+            <p>En la función giro OX se produce un giro sobre el eje OX para llevar P2 al eje XZ quedando la representación así:</p>
+            <div class="imagenes"><img src="alinearzox.png" alt="" width=400></div>
+            <p>En primera instancia teníamos un conjunto de puntos de coordenadas para el punto 1 y otra para el punto 2. Al trasladarlas, convertimos esta matriz en una matriz de translación. 
+                Según el teorema de Tales, el seno de alfa es el resultado del cociente entre el cateto opuesto y la hipotenusa mientras que el coseno es el cateto contiguo entre la hipotenusa.
+                No conocemos el ángulo alfa, que es el ángulo que necesitamos para girar sobre el eje OX por lo que hay que transformar la matriz de traslación a una matriz transformada donde se sustituya el seno y coseno de alfa por valores de x, y, z de los puntos. El giro sobre el eje OX determina el signo de alfa.</p>
+            <pre class="language-pascal"><code> 
+ //FUNCION GIRO OX PARA UN PUNTO
+Function giroOX(rad:real; V:Tpunto):Tpunto;
+var
+    seno,coseno: real;
+begin
+    seno:=sin(rad);
+    coseno:=cos(rad);
+    giroOX.x:=V.x;
+    giroOX.y:=V.Y*coseno-V.Z*seno;
+    giroOX.Z:=V.Y*seno+V.Z*coseno; 
+end;
+//FUNCION GIRO OX PARA UN NUMERO "N" DE TPUNTO
+Function GiroOX(rad:real;puntos:Tpuntos):TPuntos;
+var
+    seno,coseno:real;
+    j:integer;
+    salida:TPuntos;
+    begin
+        setlength(salida,high(puntos)+1);
+        seno:=sin(rad);
+        coseno:=cos(rad);
+        for j:=0 to high(puntos) do
+            begin
+                salida[j].X:=puntos[j].X;
+                salida[j].Y:=puntos[j].Y*coseno-puntos[j].Z*seno;
+                salida[j].Z:=puntos[j].Y*seno+puntos[j].Z*coseno;
+            end;
+        result:=salida;
+    end;
+//FUNCION GIRO OX PARA UN PDB
+procedure giroOX(rad:real; var P:TPDB);
+var
+    j:integer;
+    seno,coseno:real;
+    begin
+        seno:=sin(rad);
+        coseno:=cos(rad);
+        for j:=1 to P.NumFichas do
+        begin
+            P.Atm[j].Coor.Y:=P.Atm[j].Coor.Y*coseno-P.Atm[j].Coor.Z*seno;
+            P.Atm[j].Coor.Z:=P.Atm[j].Coor.Y*seno+P.Atm[j].Coor.Z*coseno;
+      end;
+  end;
+            </code></pre>
+            <p><b>1.3. Función giro OY</b></p>   
+            <p>Esta función produce una rotación sobre el eje OY para llevar P2 al plano Z quedando la representación de la siguiente manera:</p>
+            <div class="imagenes"><img src="alinearzoy.png" alt="" width=400></div>
+            <p>En este caso, el ángulo de giro es el ángulo phi y tampoco lo conocemos por lo que hay que sustituir los senos y cosenos de phi por valores de catetos e hipotenusa según el teorema de Tales como se ha realizado en el giro OX. Este giro OY determina el signo de phi.</p>
+            <pre class="language-pascal"><code> 
+//FUNCION GIRO OY PARA UN PUNTO
+Function giroOY(rad:real; V:Tpunto):Tpunto;
+var
+    seno,coseno: real;
+begin
+    seno:=sin(rad);
+    coseno:=cos(rad);
+    giroOY.x:=V.x*coseno+V.z*seno;
+    giroOY.y:=V.Y;
+    giroOY.Z:=V.Z*coseno-V.Y*seno;
+end;
+//FUNCION GIRO OY PARA UN NUMERO "N" DE TPUNTO
+Function GiroOY(rad:real;puntos:Tpuntos):TPuntos;
+var
+    seno,coseno:real;
+    j:integer;
+    salida:TPuntos;
+    begin
+        setlength(salida,high(puntos)+1);
+        seno:=sin(rad);
+        coseno:=cos(rad);
+        for j:=0 to high(puntos) do
+        begin
+            salida[j].X:=puntos[j].X*coseno+puntos[j].Z*seno;
+            salida[j].Y:=puntos[j].Y;
+            salida[j].Z:=puntos[j].Z*coseno-puntos[j].X*seno;
+        end;
+        result:=salida;
+    end;
+//FUNCION GIRO OY PARA UN PDB
+procedure giroOY(rad:real; var P:TPDB);
+var
+    j:integer;
+    seno,coseno:real;
+    begin
+        seno:=sin(rad);
+        coseno:=cos(rad);
+        for j:=1 to P.NumFichas do
+        begin
+            P.Atm[j].Coor.X:=P.Atm[j].Coor.X*coseno+P.Atm[j].Coor.Z*seno;
+            P.Atm[j].Coor.Z:=P.Atm[j].Coor.Z*coseno-P.Atm[j].Coor.X*seno;
+        end;
+    end;
+            </code></pre>
+            <h2>2. Función alinear_ejeZ</h2>
+            <p>Esta función tiene como argumento de entrada una matriz de Tpuntos y, como variables de salida, también una matriz de Tpuntos.</p>
+            <pre class="language-pascal"><code> 
+Function alinear_ejeZ(puntos:Tpuntos): Tpuntos;
+var
+    salida:Tpuntos;
+    a,b,c,d1,d2,fi,alfa,senofi,senoalfa:real;
+    p1,p2:TPunto;
+    begin
+        setlength(salida,high(puntos)+1); 
+        p1:=puntos[0]; 
+        salida:=traslacion(-p1.x,-p1.y,-p1.z, puntos); 
+        p2:=salida[high(salida)];
+        a:=p2.x;
+        b:=p2.y;
+        c:=p2.z;
+        d1:=sqrt(sqr(b)+sqr(c)); 
+        d2:=sqrt(Sqr(a)+sqr(b)+sqr(c));
+        senofi:=b/d1;
+        senoalfa:=a/d2;
+        fi:=arcsin(senofi);
+        alfa:=arcsin(senoalfa);
+        salida:=GiroOX(fi,salida);
+        salida:=GiroOY(alfa,salida);
+        result:=salida;
+    end;
+                </code></pre>   
+                <p>A continuación se crea un procedimiento que carga el fichero PDB en un Memo de la aplicación:</p>
+                <pre class="language-pascal"><code>                
+procedure TForm1.Button1Click(Sender: TObject);
+var
+    nomfiPDB:string; 
+begin
+    nomfiPDB:=CargarPDB(P);
+    if nomfiPDB<>'' then
+    begin
+        Edit1.Text:=nomfiPDB;
+        Memo1.Lines.LoadFromFile(nomfiPDB);
+        SpinEdit1.MinValue:=1;
+        SpinEdit1.MaxValue:=P.NumResiduos;
+        SpinEdit1.Value:=1;
+        SpinEdit2.MinValue:=1;
+        SpinEdit2.MaxValue:=P.NumResiduos;
+        SpinEdit2.Value:=P.NumResiduos;
+    end else
+    begin
+        Edit1.text:='';
+        Memo1.Clear;
+    end;
+end;
+                </code></pre>
+                <p>A continuación se crea un procedimiento para crear un dibujo que proyecte las posiciones de los Ca de un fragmento definido del receptor del glucagón. 
+                En este procedimiento, tenemos que asegurar que el usuario introduzca un valor de CAn mayor que CA1. Por ello, ponemos que si el usuario mete los valores del revés, se invierta CA1 y CAn. 
+                Además, es necesario dimensionar dos matrices, una de la imagen 1 y otra de la imagen 2. Además de la matriz "datos" que contiene los valores de los carbonos alfa de todo el PDB. </p>
+                <br>
+                <p>Se van rellenando todas las fichas de la matriz "datos" y, a partir de estos datos, utilizamos la función PlotXY para dibujar la imagen. Por último, utilizamos la función "alinear_ejeZ" para alinear CA1 y CAn y utilizamos de nuevo 
+                    la función PlotXY para obtener la nueva imagen con los CA alineados.
+                </p>
+                <pre class="language-pascal"><code>
+procedure TForm1.Button2Click(Sender: TObject);
+var
+    j:integer;
+begin
+    CA1:=SpinEdit1.Value;
+    CAn:=SpinEdit2.Value;
+    if CA1>CAn then
+    begin
+        j:=CA1;
+        CA1:=CAn;
+        CAn:=j;
+    end;
+    setlength(CAI,CAn-CA1+1);
+    setlength(CAT,CAn-CA1+1);
+    setlength(datos, 2, CAn-CA1+1); 
+    for j:=CA1 to CAn do CAI[j-CA1]:=P.Atm[P.res[j].CA].Coor; 
+    for j:=0 to high(CAI) do
+    begin
+        datos[0,j]:=CAI[j].X;
+        datos[1,j]:=CAI[j].Y;
+    end;
+    PlotXY(datos,Image1.Canvas,0, 1,true,true);
+    CAT:=alinear_ejeZ(CAI);
+    for j:=0 to high(CAT) do
+        begin
+            datos[0,j]:=CAT[j].X;
+            datos[1,j]:=CAT[j].Y;
+        end;
+    PlotXY(datos,Image2.Canvas, 0, 1,TRUE,TRUE, clyellow, clyellow, clblack, true); 
+end;           
+            </code></pre>  
+            <p>Por último se crea un procedimiento para que cada vez que se cambien los valores del primer y último carbono alfa y se clique sobre el botón "alinear Z", se eliminen las imágenes y no se superpongan.</p>     
+            <pre class="language-pascal"><code>
+procedure TForm1.FormCreate(Sender: TObject); 
+begin
+  Image1.Canvas.Clear;
+  Image2.Canvas.Clear;
+end;  
+        </code></pre> 
+        <h2>3. Criterio de signos</h2> 
+        <p>Cuando se realizan los giros hay que tener en cuenta en qué sentido se realizan. Cuando el giro es antihorario, el signo es negativo mientras que cuando el giro es horario, el signo es positivo. En este sentido, si establecemos 8 cuadrantes delimitados por los ejes x, y, z según la siguiente imagen:</p>
+        <div class="imagenes"><img src="alinearzcubo.png" alt="" width=400></div>     
+        <p>Los giros determinan los valores de a, b y c determinan los signos del seno de phi y alfa de la siguiente manera:</p>
+        <div class="imagenes"><img src="alinearzsignos.png" alt="" width=600></div>  
+        <p>En esta tabla, el signo + en la columna de Giros representa un giro antihorario y el signo -, un giro horario.</p>
+        <h2>4. Visualización del programa</h2>
+        <p>A continuación se muestra una demostración del uso del programa</p>
+        <video src="videoalinearz.mov" alt="" class="anchoCompleto" controls></video>  
+        <h2>5. Conclusiones</h2>      
+        <p>A continuación he representado los diez primeros residuos en la aplicación de Lazarus obteniendo la siguiente imagen:</p>
+        <div class="imagenes"><img src="alinearz10.png" alt="" width=500></div> 
+        <h4 class="pieImg">Imagen del programa alinear Z </h4>
+        <p>Para comprobar el resultado, he realizado la alineación con el programa JMOL:</p>
+        <div class="dobleimagen">
+            <img src="alinearzini.png" alt="" width=500>
+            <img src="alinearztrans.png" alt="" width=500>
+        </div>
+        <h4 class="pieImg">Imagen JMOL alineando sobre el eje Z</h4>
+        <p>Por tanto, este programa es capaz de trasladar un punto y girarlo sobre el eje OX y OY y mostrar las transformaciones gráficamente.</p>
+        </div>   
+    </div>
+    <div class="barraCompleta">
+        <div class="contenidoBarra2">
+            <a href="estereo.html"><div class="anterior">
+                <img src="flechaIzquierdaBlanca.png" alt="flechita siguiente" class="iconoFlechaAnterior">
+                <div class="textoBarra">
+                    <p>Anterior</p>
+                    <h2>Estereodiagrama</h2>
+                </div>
+            </div></a>
+            <a href="rmsd.html"><div class="siguiente">
+                <div class="textoBarra">
+                    <p>Siguiente</p>
+                    <h2>RMSD</h2>
+                </div>
+                <img src="flechaDerechaBlanca.png" alt="flechita siguiente" class="iconoFlechaSiguiente">
+            </div></a>
+        </div>
+    </div>
+</body>
+</html>

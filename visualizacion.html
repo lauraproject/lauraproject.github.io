@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laura</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="prism.css" rel="stylesheet" />
+    <script src="prism.js"></script>
+</head>
+<body>
+    <div class="menuSuperior">
+        <img src="" alt="">
+        <h3>Cuaderno Ingeniería de Proteínas</h3>
+    </div>
+    <div class="contenedorPrincipal">
+        <div class="columnaIzquierda">
+            <div class="fixed">
+                <h4>Cuaderno Ingeniería de Proteínas</h4>
+                <a href="index.html">1. Revisión bibliográfica</a>
+                <a href="formato.html">2. Discriminar formato fichero y extraer secuencia</a>
+                <a href="parsing.html">3. Parsing ficheros PDB</a>
+                <a href="visualizacion.html" class="activo">4. Visualización de las estructuras </a>
+                <a href="carbonosalfa.html">5. Carbonos alfa </a>
+                <a href="rama.html">6. Diagrama de Ramachandran</a>
+                <a href="estereo.html">7. Estereodiagrama</a>
+                <a href="alinearz.html">8. Alinear Z</a>
+                <a href="rmsd.html">9. RMSD</a>
+                <a href="distorsion.html">10. Distorsiones estéricas </a>
+                <a href="disulfuro.html">11. Puentes disulfuro </a>
+            </div>
+        </div>
+        <div class="columnaCentro ERROR">
+            <h1>Visualización de las estructuras</h1>
+            <h5>Analizar el fichero de estructura de la proteína asignada (en caso de haber más de uno, elegir el más representativo). 
+                Visualizar la proteína con RASMOL (u otro visor equivalente) e identificar, con ayuda del programa, los elementos estructurales 
+                y funcionales más relevantes (elementos secundarios, centros activos, sitios de unión a ligandos, dominios reguladores, etc). 
+                Una vez localizados, grabarlos como imágenes e incluirlas en el CPA, con los comentarios pertinentes.</h5>
+            <br>
+            <p>He utilizado la aplicación JMOL para estudiar las estructuras más importantes del receptor del glucagón. En primer lugar, he cargado el fichero 4L6R del PDB:</p>
+            <div class="imagenes"><img src="4L6R completa.jpg" alt="" width=500></div>
+            <h4 class="pieImg">Receptor del glucagón 4L6R</h4>
+            <h2>1. Componentes estructurales importantes</h2>
+            <p>En primer lugar, he representado en JMOL cada una de las partes estructurales del receptor del glucagón.</p>
+            <br>
+            <p><b>1.1. Dominios alfa TMD</b></p>
+            <p>Como ya se mencionó en la <a href="index.html">Revisión bibliográfica</a>, el receptor del glucagón consta de 7 dominios de hélices alfa que se encuentran etiqueados en el siguiente vídeo:</p>
+            <video src="videovisualizacion.mov" alt="" class="anchoCompleto" controls></video>
+            <h4 class="pieImg">Hélices alfa</h4>
+            <p><b>1.2. Dominio extracelular ECD</b></p>
+            <p>El dominio extracelular ECD (Q27-D124) está constituido por una hélice alfa unidas por distintos loops a láminas beta como se puede observar en la siguiente imagen:</p>
+            <div class="imagenes"><img src="ECD.jpg" alt="" width=500></div>
+            <h4 class="pieImg">Dominio ECD</h4>
+            <p>Diversos estudios han determinado que el dominio ECD es un importante regulador negativo de la actividad del receptor del glucagón. El modelo actual de activación de los GPCR de clase B propone que la porción C-terminal de la hormona peptídica se une primero al ECD y que esta interacción facilita la unión de la mitad N-terminal a elementos del TMD. Esta segunda interacción induce un cambio estructural en el receptor que activa las proteínas G<sup>[1]</sup> por lo que si se bloquea el dominio ECD, el glucagón no puede unirse correctamente a su receptor.</p>
+            <br>
+            <p><b>1.3. Loops ECL e ICL</b></p>
+            <p>El receptor del glucagón se encuentra en la membrana celular de las células beta pancreáticas. Algunos loops se encuentran hacia la parte exterior y otras hacia la parte interior. A continuación se muestran los distintos loops extracelulares (ECL1, ECL2 y ECL3) y los loops intracelulares (ICL1, ICL2 y ICL3).</p>
+            <div class="dobleimagen">
+                <img src="ECLetq.jpg" alt="" width=500>
+                <img src="ICLetq 2.jpg" alt="" width=500>
+            </div>
+            <h4 class="pieImg">A la izquierda los ECLs y a la derecha, los ICLs.</h4>
+            <p><b>1.4. Tallo o stalk</b></p>
+            <p>A continuación se muestra el tallo o stalk en verde. El tallo está constituido por los residuos G125-K126:</p>
+            <div class="imagenes"><img src="stalk.jpg" alt="" width=500></div>
+            <h4 class="pieImg">Tallo</h4>
+            <h2>2. Bolsillo de unión</h2>
+            <p>El glucagón se une al TMD y también interacciona con el dominio ECD. El bolsillo de unión está constituido por las puntas de las hélices II y VI y, por otro lado, los deo las hélices III y VII. Por tanto, en JMOL he representado en CPK las puntas de las hélices II y VI junto al loop que las une y las puntas de las hélices III y VII y el correspondiente loop que las une:</p>
+            <div class="imagenes"><img src="binding.jpg" alt="" width=500></div>
+            <h4 class="pieImg">Bolsillo de unión</h4>
+            <H2>3. Bibliografía</H2>
+            <p>[1] Koth, C. M., Murray, J. M., Mukund, S., Madjidi, A., Minn, A., Clarke, H. J., Wong, T., Chiang, V., Luis, E., Estevez, A., Rondon, J., Zhang, Y., Hötzel, I., & Allan, B. B. (2012). Molecular basis for negative regulation of the glucagon receptor. Proceedings of the National Academy of Sciences of the United States of America, 109(36), 14393–14398. https://doi.org/10.1073/pnas.1206734109</p>
+
+
+           
+
+
+
+
+
+            
+        </div>
+        
+    </div>
+    <div class="barraCompleta">
+        <div class="contenidoBarra2">
+            <a href="parsing.html"><div class="anterior">
+                <img src="flechaIzquierdaBlanca.png" alt="flechita siguiente" class="iconoFlechaAnterior">
+                <div class="textoBarra">
+                    <p>Anterior</p>
+                    <h2>Parsing ficheros PDB</h2>
+                </div>
+            </div></a>
+            <a href="carbonosalfa.html"><div class="siguiente">
+                <div class="textoBarra">
+                    <p>Siguiente</p>
+                    <h2>Carbonos alfa</h2>
+                </div>
+                <img src="flechaDerechaBlanca.png" alt="flechita siguiente" class="iconoFlechaSiguiente">
+            </div></a>
+        </div>
+    </div>
+</body>
+</html>

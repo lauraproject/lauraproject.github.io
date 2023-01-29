@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laura</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="prism.css" rel="stylesheet" />
+    <script src="prism.js"></script>
+</head>
+<body>
+    <div class="menuSuperior">
+        <img src="" alt="">
+        <h3>Cuaderno Ingeniería de Proteínas</h3>
+    </div>
+    <div class="contenedorPrincipal">
+        <div class="columnaIzquierda">
+            <div class="fixed">
+                <h4>Cuaderno Ingeniería de Proteínas</h4>
+                <a href="index.html">1. Revisión bibliográfica</a>
+                <a href="formato.html">2. Discriminar formato fichero y extraer secuencia</a>
+                <a href="parsing.html">3. Parsing ficheros PDB</a>
+                <a href="visualizacion.html">4. Visualización de las estructuras </a>
+                <a href="carbonosalfa.html" class="activo">5. Carbonos alfa </a>
+                <a href="rama.html">6. Diagrama de Ramachandran</a>
+                <a href="estereo.html">7. Estereodiagrama</a>
+                <a href="alinearz.html">8. Alinear Z</a>
+                <a href="rmsd.html">9. RMSD</a>
+                <a href="distorsion.html">10. Distorsiones estéricas </a>
+                <a href="disulfuro.html">11. Puentes disulfuro </a>
+            </div>
+        </div>
+        <div class="columnaCentro">
+            <h1>Carbonos alfa</h1>
+            <h5>Desarrollar una función biotools  (que denominaremos writePDB) que permita reconstruir una línea de texto con el formato correcto 
+            de una línea ATOM de un PDB. Emplear esta función para escribir un programa que genere un fichero PDB (solo líneas ATOM), a partir de 
+            una estructura TPDB previamente importada, que contenga solamente los carbonos alfa de la proteína. Comprobar que el fichero *.pdb creado 
+            puede ser visualizado con RASMOL (u otro visor equivalente) y crear a partir de él una imagen GIF, JPG o PNG del esqueleto covalente de la 
+            proteína en modo spacefill, coloreada según sus factores de temperatura. Identificar, sobre esta imagen, los residuos más desordenados de 
+            la proteína y elaborar finalmente un breve informe sobre su localización en la estructura y su posible interpretación en términos de la 
+            estructura y la función de la proteína.</h5>
+            <h2>1. Función Write PDB</h2>
+            <p>La función writePDB tiene como argumento de entrada un TAtomPDB que he denominado “Atm” y tiene como variable de salida un string. 
+                En esta función, a partir de los datos del registro Atm, se crea una cadena. He utilizado los comandos Padleft para que el formato 
+                que salga en el programa sea igual al que hay en el fichero PDB, con las columnas alineadas y sus espacios correspondientes.</p>
+            <br>
+            <p>Además, cabe destacar que cuando se introducen los datos en el programa, estos tienen un formato de tipo string que, debe ser 
+                convertidos en integer o real, según se haya establecido en el registro TATomPDB:</p>
+            <pre class="language-pascal"><code>
+TAtomPDB=record
+    NumAtom:integer;
+    ID:string;
+    Altlocation:char;
+    resName:string;
+    Subunidad:char;
+    NumRes:integer;
+    Coor:Tpunto;
+    FTem: real;
+    Ocupancia:real;
+end; 
+            </code></pre>
+            <p>Después, estos datos deben convertirse de nuevo a string para salir como una cadena, por ello, he utilizado “inttostr” 
+            (convierte integer en cadena) y “formatfloat” (convierte real en cadena).</p>
+            <pre class="language-pascal"><code>
+Function writePDB(Atm:TAtomPDB):string;
+    begin
+        result:='ATOM  '+ Padleft(inttostr(Atm.NumAtom),5) + Padleft(Atm.ID,3) + '  ' + Atm.resName + ' ' + (Atm.Subunidad)
+                + Padleft(inttostr(Atm.NumRes),4) + '    ' + Padleft(formatfloat('0.000', Atm.Coor.X),8) + Padleft(formatfloat('0.000',Atm.Coor.Y),8)
+                + Padleft(formatfloat('0.000',Atm.Coor.Z),8) + '  ' + formatfloat('0.000', Atm.ocupancia) + ' ' + formatfloat('0.000',Atm.Ftem);
+    end;
+            </code></pre> 
+            <h2>2. Extracción de las líneas 'ATOM' de los carbonos alfa del PDB</h2>
+            <p>He creado un programa para poder utilizar la función. En primer lugar, he puesto un botón que cuando se pulse sobre él cargue un fichero PDB en un Memo:</p>
+            <pre class="language-pascal"><code>
+procedure TForm1.Button1Click(Sender: TObject);
+    begin
+        if OpenDialog1.execute then
+            begin
+                Edit1.text:=ExtractFileName(OpenDialog1.Filename);
+                Memo1.Clear;
+                Memo1.Lines.LoadFromFile(OpenDialog1.Filename);
+            end;
+    end;
+            </code></pre> 
+            <p>Además, he creado otro botón que al pulsarlo se extraigan las líneas “ATOM” de los carbonos alfa. En este procedimiento se recorre todo el fichero del PDB 
+                cargado en el Memo línea a línea. Si la primera palabra de la línea corresponde con ‘ATOM’ y, además, si la posición 13 a la 16 corresponde a ‘CA’ entonces 
+                se empieza a almacenar la información del átomo en las distintas variables del registro TAtomPDB.</p>
+            <br>
+            <p>Como ya he mencionado antes, se ha utilizado “strtoint” y strtofloat” para convertir las cadenas en integer o real, respectivamente.</p>
+            <br>   
+            <p>Como se puede observar, se ha utilizado la función writePDB para que se rellene la variable “líneaAtm” con los datos correspondientes a la línea del Memo que contiene 
+                información acerca de los carbonos alfa y que después, esta se añada a otro Memo. Además, he utilizado el SelStart para que cuando el Memo2 muestra la información, 
+                esté en la primera línea y no en la última.</p>
+            <pre class="language-pascal"><code>
+procedure TForm1.Button2Click(Sender: TObject);
+    var
+    j:integer;
+    linea, lineaAtm:string;
+    Atm:TAtomPDB;
+        begin
+            for j:=0 to Memo1.Lines.Count-1 do
+                begin
+                    linea:=Memo1.Lines[j];
+                    if (linea[1..6]='ATOM  ') and (Trim(copy(linea,13,4))= 'CA') then
+                    begin
+                        Atm.NumAtom:=strtoint(trim(linea[7..11]));
+                        Atm.ID:=trim(linea[13..16]);
+                        Atm.Altlocation:=linea[17];
+                        Atm.Resname:=trim(linea[18..20]);
+                        Atm.Subunidad:=linea[22];
+                        Atm.NumRes:=strtoint(trim(linea[23..26]));
+                        Atm.Coor.X:=strTofloat(trim(linea[31..38]));
+                        Atm.Coor.Y:=strTofloat(trim(linea[39..46]));
+                        Atm.Coor.Z:=strTofloat(trim(linea[47..54]));
+                        Atm.ocupancia:=strtofloat(trim(linea[55..60]));
+                        Atm.Ftem:=strTofloat(trim(linea[61..66]));
+                        lineaAtm:=writePDB(Atm);
+                        Memo2.Lines.Add(lineaAtm);
+                    end;
+                end;
+            Memo2.SelStart:=0;
+        end; 
+            </code></pre> 
+            <p>Además, es necesario crear un archivo que contenga las líneas ATOM del PDB de los carbonos alfa para poder usarlo en JMOL más adelante. Para ello he creado 
+            un procedimiento que guarda la información del Memo que contiene las líneas ATOM de los carbonos alfa: </p>
+            <pre class="language-pascal"><code>
+procedure TForm1.Button3Click(Sender: TObject);
+    begin
+        if SaveDialog1.Execute then
+        Memo2.Lines.SaveToFile(SaveDialog1.Filename);
+    end;    
+            </code></pre>    
+            <h2>3. Visualización del programa</h2>
+            <video src="videocarbonosalfa.mov" alt="" class="anchoCompleto" controls></video>
+            
+            <h2>4. JMOL</h2>
+            <p><b>4.1. Imagen JMOL</b></p>
+            <p>En jmol podemos representar los átomos según su factor de temperatura fijo o relativo. El fijo se refiere a una escala absoluta de 0 a 100 mientras que en el relativo el color es relativo a los valores mínimo 
+            y máximo de factor B presentes en el archivo (no en la selección)<sup>[1]</sup>. Las imágenes obtenidas con el jmol son las siguientes:</p>
+            <div class="dobleimagen">
+                <img src="jmolCAfija" alt="" width=500>
+                <img src="jmolCAvariable" alt="" width=500>
+            </div>
+            <h4 class="pieImg">Representación de los carbonos alfa en jmol a partir del fichero obtenido en la aplicación de Lazarus. A la izquierda factor de temperatura fija y a la derecha, factor de temperatura variable.</h4>
+            <p>En la imagen de la derecha se aprecia colores más oscuros debido a que se colorean en función de los factores de temperatura del PDB por lo que el azul oscuro representa los valores de factor de temperatura máximos del PDB.</p>
+            <p><b>4.2. Conclusiones </b></p>
+            <p>El factor de temperatura mide la desviación que hay en la posición de cada átomo entre las diferentes macromoléculas que forman el cristal. 
+            Si varía mucho, entonces el átomo se encuentra en una zona donde puede adoptar distintas posiciones, es decir, que presenta mayor movilidad.</p>
+            <br>
+            <p>Cada átomo se colorea, siguiendo un gradiente bwr (como se muestra en la imagen), según su "factor de temperatura" (o factor B, o factor de Debye-Waller) guardado en el archivo PDB. Esto proporciona 
+                típicamente una medida de la movilidad de un átomo dado, o la incertidumbre en su posición. Un factor B cristalográfico elevado puede indicar una estructura incorrecta <sup>[1]</sup>.</p>
+            <div class="imagenes"><img src="factorT.png" alt="" width=500></div>
+            <h4 class="pieImg">Significado de los colores del gradiente bwr</h4>
+            <p>Por tanto, podemos decir que hay dos zonas definidas donde encontramos carbonos alfa con un factor de temperatura elevado, es decir, zonas con mayor variabilidad posicional. Una de estas zonas corresponden a un lazo que se encuentra unido a la hélice VIII. 
+                Esto tiene sentido puesto que los lazos serán zonas más flexibles de la proteína que no poseen una estructura rígida. La otra zona con factores de temperatura elevados corresponden a la región ECL1, que es un loop extracelular. 
+                Se ha visto que esta región es un importante modulador que regulanla unión del ligadno y la activación del receptor por lo que tiene sentido que sea una región con alta movilidad <sup>[2]</sup>.</p>
+            <br>
+            <p>Por otro lado, a partir de la imagen podemos determinar que la zona de las hélices alfa posee un factor de temperatura bastante alto por lo que son zonas bastante rígidas. Esto se debe a que son parte de las zonas que ofrecen soporte estructural a la proteína y, por ello, no son tan flexibles.</p>
+            <br>
+            <p>Por tanto, el factor de temperatura sirve para determinar las zonas más flexibles y más rígidas de las proteínas para evaluar la funcionalidad de la distintas regiones de la proteína y, además, para determinar la calidad de la estructura.</p>
+            <h2>5. Bibliografía</h2>
+            <p>[1] Colores en Jmol. (s. f.). https://biomodel.uah.es/Jmol/colors/jmol_colors.es.htm</p>
+            <p>[2] Zhang, H. et al. Structure of the full-length glucagon class B G-protein-coupled receptor. Nature 546, 259–264 (2017)</p>
+
+
+
+
+
+
+
+
+        </div>
+        
+    </div>
+    <div class="barraCompleta">
+        <div class="contenidoBarra2">
+            <a href="visualizacion.html"><div class="anterior">
+                <img src="flechaIzquierdaBlanca.png" alt="flechita siguiente" class="iconoFlechaAnterior">
+                <div class="textoBarra">
+                    <p>Anterior</p>
+                    <h2>Visualización de las estructuras</h2>
+                </div>
+            </div></a>
+            <a href="rama.html"><div class="siguiente">
+                <div class="textoBarra">
+                    <p>Siguiente</p>
+                    <h2>Diagrama de Ramachandran</h2>
+                </div>
+                <img src="flechaDerechaBlanca.png" alt="flechita siguiente" class="iconoFlechaSiguiente">
+            </div></a>
+        </div>
+    </div>
+</body>
+</html>

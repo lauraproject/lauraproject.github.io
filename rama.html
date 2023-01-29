@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laura</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="prism.css" rel="stylesheet" />
+    <script src="prism.js"></script>
+</head>
+<body>
+    <div class="menuSuperior">
+        <img src="" alt="">
+        <h3>Cuaderno Ingeniería de Proteínas</h3>
+    </div>
+    <div class="contenedorPrincipal">
+        <div class="columnaIzquierda">
+            <div class="fixed">
+                <h4>Cuaderno Ingeniería de Proteínas</h4>
+                <a href="index.html">1. Revisión bibliográfica</a>
+                <a href="formato.html">2. Discriminar formato fichero y extraer secuencia</a>
+                <a href="parsing.html">3. Parsing ficheros PDB</a>
+                <a href="visualizacion.html">4. Visualización de las estructuras </a>
+                <a href="carbonosalfa.html">5. Carbonos alfa </a>
+                <a href="rama.html" class="activo">6. Diagrama de Ramachandran</a>
+                <a href="estereo.html">7. Estereodiagrama</a>
+                <a href="alinearz.html">8. Alinear Z</a>
+                <a href="rmsd.html">9. RMSD</a>
+                <a href="distorsion.html">10. Distorsiones estéricas </a>
+                <a href="disulfuro.html">11. Puentes disulfuro </a>
+            </div>
+        </div>
+        <div class="columnaCentro">
+            <h1>Diagrama de Ramachandran</h1>
+            <h5>Preparar un conjunto de funciones biotools que permitan automatizar el cálculo de distancias interatómicas, 
+                ángulos de enlace y ángulos de torsión a partir de las coordenadas proporcionadas desde un TPDB. Con ayuda de estas 
+                herramientas, desarrollar una aplicación Free Pascal/Lazarus que permita construir el diagrama de Ramachandran de la 
+                proteína importada. Analizar con este programa algunas de las estructuras de la proteína asignada e incluir el 
+                procedimiento y los resultados obtenidos en el CPA. Para confirmar la corrección de los cálculos, incluya también 
+                una tabla de ejemplo de los diez primeros residuos, con los valores de torsión calculados y los observados directamente 
+                mediante la herramienta “set picking torsión” de RASMOL (o su equivalente en Pymol, Jmol, Yasara o el visor que se esté 
+                empleando) o, en su lugar, los obtenidos a través de la red.</h5>
+            <br>
+            <p>El objetivo es crear un programa que dibuje el diagrama de Ramachandran. Para ello, es necesario calcular las distancias interatómicas, ángulos de enlace y ángulos de torsión a partir de las coordenadas de los átomos.</p>
+            <h2>1. Cálculo de distancias interatómicas</h2>
+            <p>Se han creado dos funciones distintas para poder calcular las distancias entre 2 puntos y, 
+            por tanto, poder usar estas funciones para calcular las distancias interatómicas.</p>
+            <br>
+            <p><b>1.1. Primera función</b></p>
+            <pre class="language-pascal"><code>
+Function distancia3D(xa, ya, za, xb, yb, zb: real) : real;
+begin
+    result:=sqrt(sqr(xb-xa)+sqr(yb-ya)+sqr(zb-za));
+end;
+            </code></pre>
+            <br>
+            <p><b>1.2. Segunda función</b></p>
+            <pre class="language-pascal"><code>
+Function distancia3D(p1, p2: Tpunto): real; overload; 
+    begin
+        result:=sqrt(sqr(p1.x-p2.x)+sqr(p1.y-p2.y)+sqr(p1.z-p2.z));
+    end;
+            </code></pre>
+
+            <h2>2. Cálculo de ángulos de enlace</h2>
+            <p><b>2.1. Cálculo ángulo de enlace de dos vectores</b></p>
+            <p>Esta función calcula los ángulos de enlace para dos vectores (A y B) que tienen coordenadas x, y, z.</p>
+            <pre class="language-pascal"><code>
+Function AngV(A,B:Tpunto):real; 
+    var
+        numerador, denominador:real;
+    begin
+        numerador:=ProdEsc(A,B);
+        denominador:=modulo(A)*modulo(B);
+        if denominador<>0 then AngV:=arccos(numerador/denominador) else
+            result:=maxfloat; 
+    end;
+            </code></pre>
+            <p><b>2.2. Cálculo ángulo de enlace de tres puntos</b></p>
+            <p>Esta función calcula el ángulo de enlace entre tres puntos en el espacio (A, B y C), cada uno con sus coordenadas x,y,z. Esta función utiliza la función DifV que se explicará más tarde.</p>
+            <pre class="language-pascal"><code>
+Function AngV(A,B,C:Tpunto):real; overload; //A,B y C son tres puntos en el espacio, cada uno con sus coordenadas x,y,z
+    var
+        V,W:Tpunto;
+    begin
+        V:=DifV(A,B);
+        W:=DifV(B,C);
+        result:=AngV(V,W);
+    end;
+            </code></pre>
+            <h2>3. Cálculo de ángulos de torsión</h2>
+            <p>Los ángulos de torsión o ángulos diedros son los ángulos de giro en torno a los enlaces. Si giramos el enlace del carbono alfa y 
+                la cadena lateral esto solo afecta a la cadena lateral pero no al resto de la cadena polipeptídica.
+                Sin embargo, si giramos el enlace entre el C alfa y el C carboxílico o el enlace entre el C alfa y el N, estos provocan que toda la cadena polipeptídica se mueva. 
+                Por eso estos giros son tan importantes, ya que determinan la estructura del esqueleto peptídico. Los ángulos de torsión del esqueleto peptídico que tenemos son: 
+                "phi" (giro de C alfa con N) y "psi" (giro de C alfa con C carboxílico) como se aprecia en la siguiente imagen:</p>
+            <div class="imagenes"><img src="angulostorsión.jpg" alt="" width=500></div> 
+            <h4 class="pieImg">Ángulos de torsión. Peptide Torsion Angles and Secondary Structure. (s. f.). https://www.cryst.bbk.ac.uk/PPS95/course/9_quaternary/3_geometry/torsion.html</h4>  
+            <p>Faltaría el giro omega (entre Calfa y Ccarboxílico) pero este tampoco afecta a la cadena polipeptídica. Es una estructura resonante, es decir, que la estructura real 
+                no es ninguna de las 3 sino las 3 a la vez debido a la nube electrónica. Esto ocurre porque el C está rodeado de H y N que son muy electronegativos y atraen a los 
+                electrones distorsionando la nube electrónica. Esto hace que los átomos (Ccarboxílico y Calfa) no puedan girar porque existe un orbital pi que impide el giro. Además, 
+                el enlace al tener característica de doble enlace, esto hace que todos estos átomos se encuentrne en el mismo plano (Calfa residuo anterior, Calfa, H del N, N, O, Ccarboxílico). 
+                El único sitio donde podemos girar es por el C alfa.</p>
+            <br>
+            <p>Podemos generar impedimentos estéricos cuando tenemos dos átomos que intentan ocupar la misma región del espacio. Este enlace de torsión no puede adoptar todos los valores que queramos 
+                porque podría ocurrir que dos átomos intentaran ocupar el mismo lugar. Debido a que los ángulos de giro no pueden adoptar culauiqer valor, si queremos representar los valores de los ángulos phi 
+                y ángulos psi, representamos el mapa de Ramachandran.</p>
+            <br>
+            <p>Para calcular el ángulo de torsión necesitamos definir funciones que realicen 
+                diferencias entre vectores, que calculen el producto vectorial, el ángulo entre vectores y el módulo de un vector.</p> 
+                
+            <p><b>3.1. Función diferencia de vectores</b></p>
+            <pre class="language-pascal"><code>
+Function DifV(A,B:Tpunto):Tpunto;
+    var
+        C:Tpunto;
+    begin
+        C.x:=B.x-A.x;
+        C.y:=B.y-A.y;
+        C.z:=B.z-A.z;
+        result:=C;
+    end;
+            </code></pre>
+            <p><b>3.2. Función producto escalar</b></p>
+            <pre class="language-pascal"><code>
+Function ProdEsc(A,B:Tpunto):real;
+    begin
+        ProdEsc:=A.x*B.x+A.y*B.y+A.z*B.z;
+    end; 
+            </code></pre>
+            <p><b>3.3. Función producto vectorial</b></p>
+            <pre class="language-pascal"><code>
+Function ProdVect(A,B:Tpunto):Tpunto;
+    var
+        C:Tpunto;
+    begin
+        C.x:=(A.y*B.z)-(A.z*B.y);
+        C.y:=(A.x*B.z)-(A.z*B.x);
+        C.z:=(A.x*B.y)-(A.y*B.x);
+        result:=C;
+    end;
+            </code></pre>
+            <p><b>3.4. Función módulo de vectores</b></p>
+            <p>En primer lugar definimos una función para calcular el módulo de un vector:</p>
+            <pre class="language-pascal"><code>
+Function Modulo(V:Tpunto):real;
+    begin
+        result:=sqrt(sqr(V.x)+sqr(V.y)+sqr(V.z));
+    end;
+            </code></pre>
+            <p>En segundo lugar definimos una función para calcular el módulo del vector resultante de dos puntos (A y B):</p>
+            <pre class="language-pascal"><code>         
+Function Modulo(A,B:Tpunto):real;overload;
+    begin
+        Modulo:=distancia3D(A,B);
+    end;
+            </code></pre>
+            <p>En la función torsión, la variable "diedro" es el ángulo diedro (alfa) mientras que "Diedroiupac" es el ángulo diedro multiplicado por el coseno de delta. 
+                Por otro lado, el coseno de delta es el angulo entre v3 y CB. Además, hay que resaltar que definimos "denominador" para, más tarde, indicar que nunca debe 
+                ser cero. Si el coseno de delta es mayor que 0 quiere decir que el coseno puede ser 1 o puede ser un valor menor que 1. Para obtener un valor limpio, indicamos que, 
+                cuando el coseno es mayor de 0, el coseno sea 1. Por el contrario, si cosdelta es 0, no tiene sentido porque hemos diseñado 
+                v3 para que sea paralelo a CB y, por tanto, delta solo puede dar 0º o 180º. A continuación, se muestra la función Torsión que calcula ángulos diedros:</p>
+            <pre class="language-pascal"><code>
+Function Torsion(A,B,C,D:Tpunto):real;
+    var
+        BA,BC,CB,CD,V1,V2,V3:Tpunto;
+        diedro, diedroiupac,denominador,cosdelta:real; 
+    begin
+        BA:=DifV(A,B);
+        BC:=DifV(C,B);
+        CB:=DifV(B,C);
+        CD:=DifV(D,C);
+        v1:=ProdVect(BC,BA);
+        v2:=ProdVect(CD,CB);
+        diedro:=AngV(V1,V2);
+        v3:=ProdVect(V2,V1);
+        denominador:=modulo(v3)*modulo(CB);
+        if denominador<>0 then
+            begin
+                cosdelta:=ProdEsc(V3,CB)/denominador;
+                if cosdelta>0 then cosdelta:=1 else cosdelta:=-1;
+                end else cosdelta:=maxfloat;
+                diedroiupac:=diedro*cosdelta;
+                Torsion:=diedroiupac;
+    end;                 
+            </code></pre>
+            <h2>4. Diagrama de Ramachandran</h2>
+            <p>El diagrama de Ramachandran representa los ángulos de torsión de los residuos de una proteína. En el eje y encontramos el ángulo psi y en el eje x, el ángulo phi. A partir de él se uede predecir la estructura secundaria de una proteína y nos da información acerca de la estructura 
+                tridimensional de la proteína ya que los valores que se alejan de zonas normales pueden ser un posible error en la estructura.</p>
+            <p>En primer lugar he creado un código para cargar un fichero PDB en la aplicación y almacenarlo:</p>
+            <pre class="language-pascal"><code>
+procedure TForm1.Button1Click(Sender: TObject);
+    begin
+        if OpenDialog1.execute then
+            begin
+                Edit1.Text:=ExtractFileName(OpenDialog1.Filename); 
+                Memo1.Clear;
+                Memo1.Lines.LoadFromFile(OpenDialog1.Filename); 
+                P:=CargarPDB(Memo1.Lines);  
+            end;
+    end;           
+            </code></pre>
+            <p><b>4.1. Procedimiento Diagrama de Ramanchandran</b></p>
+            <p>A continuación, se crea un código para crear una tabla con los residuos y sus ángulos phi y psi, necesarios para crear el diagrama de Ramachandran. 
+                El número de columnas será 2 (una para el ángulo phi y otra para el ángulo psi) mientras que el número de filas de la tabla será el número total de 
+                residuos sin contar el primer y último residuo de cada subunidad puesto que no tienen estos ángulos. Con este código estamos sacando la siguiente información: código de 3 letras (ID3), 
+                nº residuo de PDB (NumRes), subunidad (Subunidad).</p>
+            <br>
+            <p>En este código utilizamos "Padleft" que encolumna a la izquierda (entonces empieza en el primer carácter) y "Padright" que encolumna a la derecha (termina en el último carácter). 
+                Tienen como primer argumento la variable y como segunda argumento lo que queremos que ocupe la columna. Se calculan los ángulos en radianes así que hay que pasarlos a grados sexagesimales. 
+                Como pi radianes son 180º, si dividimos el ángulo por pi y luego lo multiplicamos por 180º, tendremos el resultado en grados.</p>
+            <br>
+            <p>A continuación definimos la variable "Ok" que es de tipo boolean. En plotXY ponemos todas las variables según como definimos la función "PlotXY", que se explicará más adelante.</p>
+            <p>El problema es que en los ejes no le damos un valor de xmin y xmax sino que dejamos que el programa lo calcule de tal manera que pueden variar 
+                de una proteína a otra y como los ejes se calculan a partir de xmin y xmin, 
+                los ejes también serán distintos y apareceran dos ejes por cada proteina (horizontal y vertical). Por tanto, xmin sera -180º (porque los ángulos 
+                diedros van de -180º a 180º), que pasado a radianes son -Pi rad y xmax será Pi. Lo mismo ocurre para ymin e ymax.</p>
+            <pre class="language-pascal"><code>
+procedure TForm1.Button2Click(Sender: TObject);
+    var
+        j,c,k:integer;
+        formula:string;
+        Ok:boolean;
+    begin
+        setlength(valores,2,P.NumResiduos-2*P.NumSubunidades);
+        Memo2.Clear;
+        Memo2.Visible:=False; 
+        Memo2.Lines.Add('   Residuo    Phi      Psi'); 
+        Memo2.Lines.Add('--------------------------------');
+        c:=0;
+        For j:=1 to P.NumSubunidades do 
+            begin
+                For k:=P.Sub[j].Res1+1 to P.Sub[j].ResN-1 do
+                begin
+                    formula:=intTostr(c)+' '+P.Res[k].ID3+intTostr(P.Res[k].NumRes)+P.Res[k].Subunidad; 
+                    Memo2.Lines.Add(Padleft(formula,10)+PadLeft(FormatFloat('0.000',P.Res[k].phi*180/Pi),10)+ 
+                                    PadLeft(FormatFloat('0.000',P.Res[k].psi*180/Pi),10)); 
+                    valores[0,c]:=P.Res[k].phi;
+                    valores[1,c]:=P.Res[k].psi;
+                    c:=c+1;
+                end;
+            end;
+        Ok:=plotXY(Valores,Image1.Canvas,0,1,borrar,false,Shape1.Brush.Color,Shape2.Brush.Color,
+                   Shape3.Brush.Color,Ejes,-Pi,Pi,-Pi,Pi);
+         Memo2.Visible:=True;
+        Memo2.SelStart:=0;
+    end;
+                </code></pre> 
+
+                <p><b>4.2. Función PlotXY</b></p>
+                <p>En la función PlotXY tenemos que definir distintas variables:<br>
+-<b>TTablaDatos</b>: es donde se van a almacenar los valores de los ángulos para luego hacer el mapa de Ramachandran.<br>
+-<b>TCanvas</b>: le tenemos que decir dónde queremos dibujar, en el TCanvas.<br>
+-<b>OX y OY</b>Hemos definido la matriz TTablaDatos que tiene filas y columnas. Ahora tenemos que decidir si vamos a dar los valores de X por columnas o filas. Es más fácil si lo damos por filas, por tanto, la primera fila (la 0 de la matriz) es X (OX) y la segunda fila (la primera de la matriz) es Y (OY). El problema de dar al programa valores por defecto es si queremos cambiar la fila de los datos Y, tenemos que cambiar los anteriores, en este caso, los de la x. Por eso, ponemos las variables que son más propensas a que las cambiemos, las primeras.<br>
+-<b>Borrar</b>: ponemos Borrar en falso porque no queremos que borre cada punto que haga.<br>
+-<b>Línea</b>: se pone para que dibuje la línea entre puntos o no.<br>
+-<b>Pluma</b>: cambia el color del lápiz a amarillo por defecto.<br>
+-<b>Relleno</b>: pone el color del relleno a amarillo por defecto.<br>
+-<b>Fondo</b>: pone el color del fondo a negro por defecto.<br>
+-<b>Ejes</b>: es de tipo booleano, si se marca, se mostrarán los ejes en el dibujo.<br>
+-<b>xmax, xmin, ymax, ymin</b>: ponemos xmin y xmax para que no de error. Es de tipo real porque puede tomar cualquier valor.<br>
+-<b>Radio</b>: es el radio del punto que dibujamos en el Canva. Los píxeles son de tipo entero y no real.<br>
+-<b>Borde</b>: enmarcamos la imagen dándole un valor de borde, donde no se dibujará.</p>
+
+                <p>La salida de la función va a ser de tipo booleano de tal manera que si sale el dibujo bien sale verdadero y si no, sale falso.</p>  
+
+                <p>Dentro de la función se definen dos funciones más: "Xpixel", esta función transforma los valores "x" a un valor de píxel y "Ypixel", que transforma los valores de "y" a un valor de píxel. Es decir, hay que hacer un cambio de escala porque en la imagen solo se pueden dar valores que estén comprendidos entre los rangos de TImage. 
+                    En TImage tendremos un rango a lo alto que va desde 0 a Height TImage y a lo ancho, desde 0 hasta el Width de la imagen. Para representar los datos hay que hacer un cambio de escala. Para hacer esto, hacemos que xmin sea 0, xmax sea W (width), ymin 0 y ymax debe ser H (height). Lo primero que hacemos es normalizar los datos (queremos que todos los valores estén entre 0 y 1). Queremos que xmax sea 1 y que xmin sea 0 por lo que hay que aplicar esta fórmula a cada valor de x: (x-xmin)/(xmax-xmin).
+                    Según esta ecuación, si mi dato x es igual a xmin, la fórmula da 0 y si mi dato x es igual xmax, la fórmula da 1. Ahora cogemos todos estos valores y los multiplicamos por lo que vale la anchura de la imagen, lo que estamos haciendo con esto es reescalar. Si x=xmin, el valor será 0 y si x=xmax, el valor será W.</p>
+                <br>
+                <p>Además, hay que poner la función Round para redondea al entero más cercano: Round[(x-xmin)/(xmax-xmin)*W]. Para los valores “y”, no podemos usar la misma fórmula que para x porque entonces dibuja una imagen invertida porque el 0 empieza en la esquina superior izquierda y va hacia abajo el dibujo. 
+                        Por ejemplo, la posición y=1 estaría arriba del todo y no abajo. Por tanto la fórmula que habría que poner es: H-H*(y-ymin)/(ymax-ymin). Cuando y=ymin, el cociente es 0 y entonces se dibuja en H (que está abajo).</p>
+                <br>
+                <p>Ahora el problema es que queremos poner un margen donde no se dibuje nada así que hay que poner ciertos límites. A la primera posición del ancho hay que sumarle el borde y la última posición del ancho será W-2*borde. 
+                        Hay que multiplicar por 2 porque en la posición inicial hemos añadido borde entonces lo que sobresaldría del cuadrado y ahora lo que queremos es poner borde también a la derecha entonces hay que consegui quitar lo que ha sobresalido y, 
+                        además, el borde que queramos. Por eso, tenemos que quitar 2 veces el borde: Xp=borde+(W-2borde)*((x-xmin)/(xmax-xmin)). Con respecto a los valores de y: Yp=H-borde+(H-2borde)*((y-ymin)/(ymax-ymin)).</p>
+                <br>
+                <p>Hemos definido en la función que íbamos a darle Xmin y Xmax el valor de 0 y esto da un error porque el denominador del cociente de la función daría 0 así que lo que decimos al programa que si Xmax=Ymax o Xmin=Ymin, que los calcule con MinValue y MaxValue.
+                Por el contrario, si xmax es distinto de xmin e ymax es distinto de ymin, se dibuja la imagen. Además, cuando iniciamos el programa no queremos que se trace una línea desde donde esta el cursor entonces hay que situar el cursor en el primer elemento para que 
+                    empiece a dibujar desde ahí. Por tanto, primero hay que calcular donde tenemos el primer punto, luego dirigir el cursor hacia allí y que una vez allí, que empiece a dibujar. Por ello, se define "xp" e "yp" que será la posición "x" e "y", respectivamente, de la primera posición de la imagen. </p>     
+                <br>
+                <p>Por último, se dibujan los ejes. El eje x será la línea que va desde (xmin,0) a (xmax,0) y el eje Y será la línea que va desde (0,ymax) a (0,ymin). A continuación se muestra la función PlotXY:</p>
+                <pre class="language-pascal"><code>
+Function PlotXY(Datos:TTablaDatos;Im:Tcanvas;OX:integer=0;OY:integer=1;Borrar:boolean=False;
+                linea:boolean=False; Pluma:Tcolor=clyellow;relleno:Tcolor=clyellow; Fondo:Tcolor=clblack;
+                Ejes:boolean=False;xmin:real=0;xmax:real=0; ymin:real=0;ymax:real=0;radio:integer=3;borde:integer=10):boolean;
+var
+    Ok:boolean;
+    xp,yp,j:integer;
+
+    Function Xpixel(x:real):integer; 
+    begin
+        Xpixel:=round(borde+(Im.Width-2*borde)*(x-xmin)/(xmax-xmin)); 
+
+    end;
+    Function Ypixel(y:real):integer;
+    begin
+        Ypixel:=round(Im.Height-(borde+(Im.Height-2*borde)*(y-ymin)/(ymax-ymin)));
+    end;
+
+begin
+    Ok:=True;  
+    if (xmin=xmax) or (ymin=ymax) then 
+    begin
+       xmin:=MinValue(Datos[OX]);
+       xmax:=MaxValue(Datos[OX]);
+       ymin:=MinValue(Datos[OY]);
+       ymax:=MaxValue(Datos[OY]);
+    end;
+    if (xmin=xmax) or (ymin=ymax) then Ok:=False;
+
+    if Ok then  
+    begin
+        if borrar then 
+        begin
+            Im.Brush.Color:=Fondo;
+            Im.Clear; 
+        end;
+        Im.Pen.Color:=pluma; 
+        Im.Brush.Color:=relleno; 
+    
+        xp:=Xpixel(Datos[OX,0]);
+        yp:=Ypixel(Datos[OY,0]);
+        Im.MoveTo(xp,yp);
+
+        for j:=0 to high(Datos[OX]) do 
+        begin
+            xp:=Xpixel(Datos[OX,j]);
+            yp:=Ypixel(Datos[OY,j]);
+            Im.Ellipse(xp-radio,yp-radio,xp+radio,yp+radio); 
+            if linea then Im.LineTo(xp,yp); 
+        end;
+        if ejes then 
+        begin
+            Im.MoveTo(Xpixel(xmin),Ypixel(0));
+            Im.LineTo(Xpixel(xmax),Ypixel(0));
+            Im.MoveTo(Xpixel(0),Ypixel(ymax)); 
+            Im.LineTo(Xpixel(0),Ypixel(ymin)); 
+        end;
+    end;
+result:=Ok;
+end;  
+                </code></pre>
+                <p>Ahora se han puesto dos CheckBoxs para que el usuario pueda seleccionar si quiere, en primer lugar, superponer una proteína sobre otra:</p>
+                <pre class="language-pascal"><code>
+procedure TForm1.CheckBox1Change(Sender: TObject);
+    begin
+        if CheckBox1.Checked then Borrar:=False
+        else Borrar:=True;
+    end;
+                </code></pre>
+                <p>Y, en segundo lugar, si quiere que se muestren los ejes:</p>
+                <pre class="language-pascal"><code>
+procedure TForm1.CheckBox2Change(Sender: TObject);
+    begin
+        if CheckBox2.Checked then Ejes:=True
+        else Ejes:=False;
+    end;
+                </code></pre>
+            <h2>5. Visualización del programa</h2>
+            <p>A continuación se muestra el funcionamiento del programa.</p>
+            <video src="videorama.mov" alt="" class="anchoCompleto" controls></video>
+            <br>
+            <p>Más en detalle se muestra el diagrama de Ramachandran obtenido con "jmol" y el obtenido con la aplicación Lazarus:</p>
+            <div class="dobleimagen">
+                <img src="ramajmol.jpg" alt="" width=500>
+                <img src="ramalazarus.png" alt="" width=500>
+            </div>
+            <h4 class="pieImg">Diagrama de Ramachandran. A la izquierda el obtenido con jmol y a la derecha, el obtenido con Lazarus.</h4>
+            <p>Seguidamente se muestran los datos de phi y psi correspondientes a los primeros 10 residuos obtenidos con jmol y con la aplicación Lazarus:</p>
+            <div class="dobleimagen">
+                <img src="tablaphipsijmol.png" alt="" width=500>
+                <img src="tablaphipsi.png" alt="" width=500>
+            </div>
+            <h4 class="pieImg">Tabla valores ángulos phi y psi. A la izquierda los obtenidos con jmol y a la derecha, los obtenidos con Lazarus.</h4>
+            <p>Se aprecia que, tanto el diagrama de Ramachandran como los valores de phi y psi son muy semejantes por lo que podemos concluir que la aplicación desarrollada elabora un diagrama de Ramachandran preciso.</p>
+            <h2>6. Conclusiones</h2>
+            <p>En función de la siguiente imagen podemos determinar las distintas estructuras secundarias que forman la proteína según sus ángulos phi y psi:</p>
+            <div class="imagenes"><img src="ramainternet.jpeg" alt="" width=500></div>
+            <h4 class="pieImg">Interpretación del diagrama de Ramachandran</h4>
+            <p>Si tenemos una proteína desplegada y la dejamos que evolucione en el espacio, todas las cadenas tienden a enrollarse y formar hélices que pueden ser más compactas o más abiertas. 
+                Si es compacta, tendremos una estructura tipo alfa hélice pero si es más abierta, entre un residuo y el siguiente hay un grado de 180º y se habla de una lámina beta.</p>
+            <br>  
+            <p>Más de los 50% de los aminoácidos se van a encontrar como una alfa hélice o una lámina beta. Los programas de predicción triestado son capaces de predecir la estructura secundaria de la proteína.</p>
+            <br>
+            <p>En el diagrama, las regiones azules más intensas corresponden a conformaciones donde no hay impedimentos estéricos, es decir estas son zonas permitidas mientras que las zonas azules claras muestran las regiones permitidas en el caso en el que en los cálculos se usan radios de van der Waals ligeramente más pequeños, es decir cuando se permite que los átomos puedan estar un poco mas cercanos. 
+                Si se dibuja el mapa de Ramachandran, los valores de phi y psi tendrán valores permitidos pero habrá algunos valores que no tendrán valores permitidos. Esto no indica que la estructura esté mal pero no debe haber muchos fuera del diagrama puesto que entonces esto nos daría un indicio de que no es una estructura verdadera lo que hay en el PDB. Por tanto, el mapa de Ramachandran permite validar la estructura terciaria de la proteína.</p>
+            <br>
+            <p>La alfa hélice y la lámina beta las vamos a encontrar en un sitio determinado en el mapa de Ramachandran. Se pueden apreciar arriba a la izquierda las láminas beta y un poco más abajo las hélices alfa dextrógiras. Además, los puntos que encontramos arriba a la derecha corresponden a hélices alfa levógiras.</p>
+            <br>
+            <p>Otro elemento de la estructura secundaria que podemos encontrar en el mapa de Ramachandran son los giros que pueden ser giros beta (totalmente cerrados) de tipo 1 o 2 y se encuentran a la derecha, cerca de las hélices alfa levógiras.</p>
+            <br>
+            <p>Abajo a la derecha encontramos zonas blancas (no coloreadas o sin puntos) que corresponden a conformaciones donde los átomos de la proteína están más cercanos que sus radios de van der Waals y, por lo tanto, estas regiones son estéricamente no permitidas para todos los aminoácidos, excepto para la Gly, que es el único aminoácido que no presenta cadena lateral.</p>
+            <br>
+            <p>Por tanto, en el diagrama de Ramachandran para nuestra proteína apreciamos las hélices alfa, tanto levógiras como dextrógiras puesto que el receptor del glucagón está compuesto por 7 hélices alfa. También encontramos algunas láminas beta y loops. Los loops orresponden a los ECLs e ICLs.</p>
+
+
+
+        </div>
+        
+    </div>
+    <div class="barraCompleta">
+        <div class="contenidoBarra2">
+            <a href="carbonosalfa.html"><div class="anterior">
+                <img src="flechaIzquierdaBlanca.png" alt="flechita siguiente" class="iconoFlechaAnterior">
+                <div class="textoBarra">
+                    <p>Anterior</p>
+                    <h2>Carbonos alfa</h2>
+                </div>
+            </div></a>
+            <a href="estereo.html"><div class="siguiente">
+                <div class="textoBarra">
+                    <p>Siguiente</p>
+                    <h2>Estereodiagrama</h2>
+                </div>
+                <img src="flechaDerechaBlanca.png" alt="flechita siguiente" class="iconoFlechaSiguiente">
+            </div></a>
+        </div>
+    </div>
+</body>
+</html>

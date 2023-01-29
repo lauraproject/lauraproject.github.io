@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laura</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="prism.css" rel="stylesheet" />
+    <script src="prism.js"></script>
+</head>
+<body>
+    <div class="menuSuperior">
+        <img src="" alt="">
+        <h3>Cuaderno Ingeniería de Proteínas</h3>
+    </div>
+    <div class="contenedorPrincipal">
+            <div class="columnaIzquierda">
+                <div class="fixed">
+                    <h4>Cuaderno Ingeniería de Proteínas</h4>
+                    <a href="index.html">1. Revisión bibliográfica</a>
+                    <a href="formato.html">2. Discriminar formato fichero y extraer secuencia</a>
+                    <a href="parsing.html" class="activo">3. Parsing ficheros PDB</a>
+                    <a href="visualizacion.html">4. Visualización de las estructuras </a>
+                    <a href="carbonosalfa.html">5. Carbonos alfa </a>
+                    <a href="rama.html">6. Diagrama de Ramachandran</a>
+                    <a href="estereo.html">7. Estereodiagrama</a>
+                    <a href="alinearz.html">8. Alinear Z</a>
+                    <a href="rmsd.html">9. RMSD</a>
+                    <a href="distorsion.html">10. Distorsiones estéricas </a>
+                    <a href="disulfuro.html">11. Puentes disulfuro </a>
+                </div>
+            </div>
+            <div class="columnaCentro ERROR2">
+                <h1>Parsing ficheros PDB</h1>
+                <h5>Desarrollar una función de parsing de ficheros PDB (que denominaremos CargarPDB) que permita representar adecuadamente los datos estructurales relevantes de una proteína en nuestro entorno de programación. 
+                    Dicha función deberá ser capaz de leer los datos desde un fichero pdb y almacenarlos en una estructura matricial (cuyo tipo denominaremos TPDB) integrada por registros de átomos (TAtomPDB), residuos (TResiduoPDB) 
+                    y subunidades (TSubunidadPDB) que contendrán campos relativos a la identificación de cada átomo, residuo y subunidad a la que pertenece, coordenadas cristalográficas (a la que asignaremos un tipo TPunto), etc. 
+                    Describir la estructura precisa del tipo TPDB.</h5>
+                <h2>1. Registros</h2>
+                <p>En primer lugar, vamos a crear un registro que es un tipo de datos altamente estructurado en Pascal. Lo vamos a crear dentro de "Type". La diferencia entre las matrices y los registros es que las matrices constan de datos 
+                    de un mismo tipo mientras que los registros pueden englobar datos de distinto tipo.</p>
+                <br>
+                <h3><b>1.1. Registro de TPunto</b></h3>
+                <br>
+                <p>El primer registro que vamos a definir es un tipo Tpunto. Este va a incluir las coordenadas de cada átomo.</p>
+                <pre class="language-pascal"><code>
+Tpunto=record
+    x,y,z:real;     
+end;
+                </code></pre> 
+                <br>
+                <p>Es habitual tener un array de registros donde tenemos un conjunto de registros. Por tanto, creamos un array de Tpunto que va a contener todas las coordenadas de todos los átomos.</p>
+                <pre class="language-pascal"><code>
+TPuntos=array of Tpunto;
+                </code></pre> 
+                <br>
+                <h3><b>1.2. Registro de TAtomPDB</b></h3>
+                <br>
+                <p>A continuación, creamos un registro donde se va a incluir toda la información importante de cada átomo del PDB.</p>
+                <pre class="language-pascal"><code>
+TAtomPDB=record
+    NumAtom:integer; //Número de átomo
+    ID:string; //Código de identificación
+    Altlocation:char; //Localización alternativa del átomo
+    resName:string; //Nombre del residuo al que pertenece el átomo
+    Subunidad:char; //Identificador de cadena
+    NumRes:integer; //Nombre del residuo al que pertenece el átomo
+    Coor:Tpunto; //Coordenadas del átomo (se engloban en Tpunto)
+    FTem: real; //Factor de temperatura (es propio de cada átomo e indica cuanto se mueve el átomo en la proteína)
+end;
+                </code></pre> 
+                <br>
+                <h3><b>1.3. Registro de TResiduoPDB</b></h3>
+                <br>
+                <p>En este registro se incluye la información importante de cada residuo del PDB.</p>
+                <pre class="language-pascal"><code>
+TResPDB=record
+    NumRes:integer; //Número de residuo 
+    Subunidad: char; //Identificador de cadena
+    ID3:string; //Código de identificación del residuo en tres letras (VAL, LYS)
+    ID1: char; //Código de identificación del residuo en un único caracter (V, L)
+    Atm1,AtmN:integer; // Número de ficha que corresponde al primer átomo (Atm1) y al último átomo (AtmN) del residuo.
+    N,CA,C,O:integer; //Número de ficha donde se encuentran los átomos que componen el esqueleto peptídico de este residuo.
+    phi,psi:real; //Ángulos Phi y Psi
+end;
+                </code></pre>
+                <br>
+                <h3><b>1.4. Registro de TSubunidadPDB</b></h3>
+                <br>
+                <p>En este registro se incluye información acerca de las subunidades del PDB.</p>
+                <pre class="language-pascal"><code>
+TSubPDB=record 
+    ID:char; //Código de identifcación
+    Atm1,AtmN,Res1,ResN:integer; //Número de ficha que corresponde al primer átomo (Atm1) y al último átomo (AtmN) de la subunidad.
+                                 //El número de ficha del primer residuo (Res1) y del último residuo (ResN) de la subunidad.
+    AtomCount,ResCount:integer; //Número de átomos (AtomCount) y residuos (ResCount) que pertenecen a esa subunidad.
+end;
+                </code></pre>   
+                <br>
+                <h3><b>1.5. TPDB</b></h3>
+                <br>
+                <p>A continuación se va a definir el tipo de proteína como un conjunto de datos. Una información útil es saber qué proteína estamos cargando, esto suele estar en el 'HEADER' del 
+                PDB por lo que el primer campo que vamos a definir es la cabecera. Después, definimos distintos arrays: Atm (array of TAtomPDB), Res (array of TResPDB), Sub (array of TSubPDB).</p>
+                <br>
+                <p>El número de átomos en el PDB no es igual al número de serie porque hay átomos que no están porque no se han resuelto. No obstante, sí coincidirá con el número de fichas que 
+                hemos creado del PDB porque cada ficha corresponde a un átomo. A este número total de átomos lo llamaremos NumFichas. También se define NumResiduos y NumSubunidades que corresponden al número 
+                de residuos y al número de subunidades, respectivamente. Por último, también se define "Secuencia" y "Subunidades", de tipo string que contendrán la secuencia y las subunidades de la proteína. </p>
+                <pre class="language-pascal"><code>
+TPDB=record
+    Header:string;
+    Atm:array of TAtomPDB;
+    Res:array of TResPDB;
+    Sub:array of TSubPDB;
+    NumFichas, NumResiduos,NumSubunidades:integer;
+    Secuencia,Subunidades:string;
+end; 
+                </code></pre>  
+                <h2>2. Funciones CargarPDB</h2>
+                <h3><b>2.1. Primera función CargarPDB</b></h3>
+                <br>
+                <p>En la función CargarPDB el argumento de entrada en un Tstrings y el argumento de salida, un registro TPDB. En esta función, 
+                se buscan las líneas "ATOM" y para cada línea almacena la información en distintas registros de diferentes arrays. Para ello, busca 
+                la posición en la que se encuentra la información y, en primer lugar, guarda la información en los distintos campos del registro TAtomPDB correspondiente.</p>
+                <br>
+                <p>Las posiciones alternativas son distintas posiciones de los átomos. El programa nos daría error porque estaría analizando el
+                mismo átomo pero con una distinta posición. Por eso solo queremos que detecte una posición del átomo. Para ello tenemos que añadir la condición: 
+                (pos(linea[17],' A')>0). Si hay un espacio es porque solo hay una posición y si está 
+                la A es porque hay varias posiciones. Por tanto utilizamos la función pos y si hay un espacio nos da un 
+                valor de 1 (porque el espacio está en la posición 1, antes de la A) y si hay una A nos da un valor de 2 (porque la A está en la 
+                posición 2), ambos valores son mayores de 0 por lo que se daría la condición y se almacenaría la información en el fichero. 
+                Por otro lado, si ahora aparece una B, el pos dará 0 porque B no aparece en (‘ A’). Como da cero, no se llevará a cabo la condición 
+                y entonces no se guardará en la ficha. No queremos que el átomo B se guarde en la ficha porque ya se habrá guardado ese mismo átomo en la posición A.</p>
+                <br>
+                <p>En segundo lugar, rellena los datos de los residuos del PDB (record TResPDB). Para identificar cuándo empieza un residuo, 
+                nos fijamos en que cada vez que aparece un nuevo resiudo aparece un nitrógeno.</p>
+                <br>
+                <p>En tercer lugar, se rellena la información de las subunidades (TSubPDB). A continuación se 
+                guardan el número de átomo que corresponde al carbono alfa, al carbono carboxílico y al oxígeno del esqueleto peptídico y al átomo inicial del residuo y de la subunidad y el número de átomo final del residuo.
+                Por último, se calculan los angulos phi y psi. Para calcular estos ángulos se utiliza la función Torsión, explicada en el <a href='rama'>Diagrama de Ramachandran</a>.</p>
+                <pre class="language-pascal"><code>
+Function CargarPDB(Texto:Tstrings):TPDB; overload;
+    var
+        j,k,F,R,S:integer;
+        y "R" cuenta el número de residuos.
+        P:TPDB; 
+        linea:string;
+    begin
+        F:=0;
+        R:=0;
+        S:=0;
+        setlength(P.Atm,Texto.Count);
+        setlength(P.Res,Texto.Count);  
+        setlength(P.Sub,Texto.Count);
+        P.Secuencia:=''; 
+        P.Subunidades:='';
+        for j:=0 to Texto.Count-1 do
+            begin
+                linea:=Texto[j];
+                if linea[1..6]='HEADER' then P.Header:=linea;
+                if (linea[1..6]='ATOM  ') and (pos(linea[17],' A')>0) then  
+                begin
+                    F:=F+1;
+                    P.Atm[F].NumAtom:=strToint(Trim(linea[7..11]));
+                    P.Atm[F].ID:=Trim(linea[13..16]);
+                    P.Atm[F].Altlocation:=linea[17];
+                    P.Atm[F].Resname:=Trim(linea[18..20]); 
+                    P.Atm[F].Subunidad:=linea[22];
+                    P.Atm[F].NumRes:=strToint(Trim(linea[23..26]));
+                    P.Atm[F].Coor.x:=strTofloat(Trim(linea[31..38]));
+                    P.Atm[F].Coor.y:=strTofloat(Trim(linea[39..46]));
+                    P.Atm[F].Coor.z:=strTofloat(Trim(linea[47..54]));
+                    P.Atm[F].Ftem:=strTofloat(Trim(linea[61..66]));
+                    if (P.Atm[F].ID='N') then 
+                        begin
+                            R:=R+1;
+                            P.Res[R].Atm1:=F; 
+                            P.Res[R].ID3:=P.Atm[F].ResName;
+                            P.Res[R].ID1:=Aa3To1(P.Res[R].ID3); 
+                            P.Res[R].N:=F;
+                            P.Res[R].NumRes:=P.Atm[F].NumRes;
+                            P.Res[R].Subunidad:=P.Atm[F].Subunidad;
+                            P.Secuencia:=P.Secuencia+P.Res[R].ID1;
+                            if pos(P.Atm[F].Subunidad,P.Subunidades)=0 then
+                                begin
+                                    S:=S+1; 
+                                    P.Subunidades:=P.Subunidades+P.Atm[F].Subunidad; 
+                                    P.Sub[S].ID:=P.Atm[F].Subunidad;
+                                    P.Sub[S].Atm1:=F;
+                                    P.Sub[S].Res1:=R;
+                                end;
+                        end;
+                            if (P.Atm[F].ID='CA') then P.Res[R].CA:=F; 
+                            if (P.Atm[F].ID='C') then P.Res[R].C:=F; 
+                            if (P.Atm[F].ID='O') then P.Res[R].O:=F;
+                            P.Res[R].AtmN:=F;
+                            P.Sub[S].AtmN:=F; 
+                            P.Sub[S].ResN:=R; 
+                end;
+            end;
+            P.NumSubunidades:=S;
+            P.NumResiduos:=R;
+            P.NumFichas:=F;
+            setlength(P.Atm,F+1); 
+            setlength(P.Res,R+1); 
+            setlength(P.Sub,S+1);
+
+            For j:=1 to P.NumSubunidades do 
+            begin
+                P.Sub[j].AtomCount:=P.Sub[j].AtmN-P.Sub[j].Atm1+1; 
+                P.Sub[j].ResCount:=P.Sub[j].ResN-P.Sub[j].Res1+1;
+                For k:=P.Sub[j].Res1+1 to P.Sub[j].ResN-1 do  
+                    begin                            
+                        P.Res[k].phi:=Torsion(P.Atm[P.Res[k-1].C].Coor, 
+                                              P.Atm[P.Res[k].N].Coor,
+                                              P.Atm[P.Res[k].CA].Coor,
+                                              P.Atm[P.Res[k].C].Coor);
+                        P.Res[k].psi:=Torsion(P.Atm[P.Res[k].N].Coor, 
+                                              P.Atm[P.Res[k].CA].Coor,
+                                              P.Atm[P.Res[k].C].Coor,
+                                              P.Atm[P.Res[k+1].N].Coor);
+                    end;
+            end;
+            result:=P;  
+    end;
+                </code></pre>  
+                <br>
+                <h3><b>2.2. Segunda función CargarPDB</b></h3>
+                <br>
+                <p>Se realizó una segunda función CargarPDB más simplificada que la anterior. Algunas de las diferencias con la anterior es que esta crea directamente un OpenDialog 
+                    cuando se ejecuta y que, además, muestra como resultado el nombre del archivo en un Edit. Asimismo, resaltar que en la anterior función la variable de entrada es de tipo Tstrings y 
+                    la de salida, es un TPDB donde se almacenan todos los datos del PDB mientras que en esta segunda función la variable de salida, es de tipo string. Esta función, además, llama a la anterior función.</p>
+                <pre class="language-pascal"><code>
+Function CargarPDB(var P:TPDB):string;
+    var
+        textoPDB: Tstrings; 
+        dialogo: TOpenDialog;   
+    begin
+        textoPDB:=TStringList.Create;
+        dialogo:=TOpenDialog.Create(Application);
+        if dialogo.Execute then
+            begin
+                textoPDB.LoadFromFile(dialogo.FileName);
+                P:=cargarPDB(textoPDB); 
+                result:=dialogo.FileName;
+            end else;
+                textoPDB.Free;
+                dialogo.Free;
+    end;
+                </code></pre> 
+                <br>
+
+            </div>
+    </div>
+    <div class="barraCompleta">
+        <div class="contenidoBarra2">
+            <a href="formato.html"><div class="anterior">
+                <img src="flechaIzquierdaBlanca.png" alt="flechita siguiente" class="iconoFlechaAnterior">
+                <div class="textoBarra">
+                    <p>Anterior</p>
+                    <h2>Discriminar formato fichero y extraer secuencia</h2>
+                </div>
+            </div></a>
+            <a href="visualizacion.html"><div class="siguiente">
+                <div class="textoBarra">
+                    <p>Siguiente</p>
+                    <h2>Visualización de las estructuras</h2>
+                </div>
+                <img src="flechaDerechaBlanca.png" alt="flechita siguiente" class="iconoFlechaSiguiente">
+            </div></a>
+        </div>
+    </div>
+</body>
+</html>

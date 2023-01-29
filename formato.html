@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laura</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="prism.css" rel="stylesheet" />
+    <script src="prism.js"></script>
+</head>
+<body>
+    <div class="menuSuperior">
+        <img src="" alt="">
+        <h3>Cuaderno Ingeniería de Proteínas</h3>
+    </div>
+    <div class="contenedorPrincipal">
+        <div class="columnaIzquierda">
+            <div class="fixed">
+                <h4>Cuaderno Ingeniería de Proteínas</h4>
+                <a href="index.html">1. Revisión bibliográfica</a>
+                <a href="formato.html" class="activo">2. Discriminar formato fichero y extraer secuencia</a>
+                <a href="parsing.html">3. Parsing ficheros PDB</a>
+                <a href="visualizacion.html">4. Visualización de las estructuras </a>
+                <a href="carbonosalfa.html">5. Carbonos alfa </a>
+                <a href="rama.html">6. Diagrama de Ramachandran</a>
+                <a href="estereo.html">7. Estereodiagrama</a>
+                <a href="alinearz.html">8. Alinear Z</a>
+                <a href="rmsd.html">9. RMSD</a>
+                <a href="distorsion.html">10. Distorsiones estéricas </a>
+                <a href="disulfuro.html">11. Puentes disulfuro </a>
+            </div>
+        </div>
+        <div class="columnaCentro">
+            <h1>Formato y secuencia</h1>
+            <h5>Desarrollar un diagrama de flujo que permita identificar si un fichero tiene formato EMBL, UniProt, GenBank, PDB u otros 
+               diferentes (pueden elegirse libremente). A continuación, desarrollar un programa informático capaz de discriminar automáticamente 
+               entre tres de ellos: Genbank y UniProt y PDB y muestre en pantalla las secuencias primarias de las proteínas correspondientes en 
+               códigos de una letra. Emplear ese programa con los ficheros bajados de Internet de la proteína asignada.</h5> 
+            <h2 id="contenido">1. Diagrama de flujo</h2>
+            <img src="diagramaflujo.png" alt="" class="anchoCompleto">
+            <h4 class="pieImg">Diagrama de flujo</h4>
+            
+            <h2 id="contenido">2. Discrimación del formato del fichero</h2>
+            <p>Para el desarrollo del programa me he basado en las diferencias existentes entre los formatos PDB, GenBank y UniProt. 
+                Los ficheros PDB comienzan con “HEADER” a diferencia de los de GenBank que empiezan con “LOCUS” y los de UniProt, cuya 
+                primera línea contiene el ID.</p>
+            <br>
+            <p>Por tanto, he creado una función cuyos valores de entrada y de salida son de tipo string. En la función, si desde la posición
+             a la 6 de la primera línea del fichero corresponde con “HEADER”, el fichero será PDB. Si esto no ocurre, el programa pasa al segundo 
+             condicional que indica que si la de la posición 1 a la 5 de la primera línea del fichero la palabra corresponde con “LOCUS”, se tratará de un fichero 
+             con formato GenBank. Por último, si el fichero no es PDB ni GenBank, pasa al tercer condicional que indica que si la posición 1 y 2 de la primera línea 
+             del formato corresponde con “ID”, el formato del fichero es UniProt. Si ninguna de los 3 condicionantes ocurre, el resultado de la función será 
+             “Formato distinto a PDB, UniProt o GenBank”.</p>
+             <br>  
+            <p>Adjunto el código utilizado para establecer la función que discrimine entre los tres formatos de ficheros.</p>
+            <pre class="language-pascal"><code>
+Function formatofichero(linea:string):string;
+    begin
+        if linea[1..6]='HEADER' then result:='PDB' else
+        if linea[1..5]='LOCUS' then result:='GenBank' else
+        if linea[1..2]='ID' then result:='UniProt' 
+        else result:='Formato distinto a PDB, UniProt o GenBank';
+    end;</code></pre>
+            <br>
+            <p>Una vez que he desarrollado la función, es necesario mostrar los resultados en el programa. Para ello, primero hay que cargar el fichero. Para ello, 
+            he desarrollado un procedimiento en el botón 1 que utiliza OpenDialog. Si se abre un fichero, en un Edit se pone el nombre del fichero y en un Memo 
+            se carga todo el fichero gracias al LoadFromFile. A continuación, se utiliza la función “formatofichero” y se le da como valor de entrada la primera 
+            línea del Memo donde se ha cargado el PDB. Aparece un mensaje emergente informando acerca del formato de fichero que se ha introducido. Además, también 
+            lo he dejado expresado en el propio programa en un Edit. El procedimiento utilizado ha sido el siguiente:</p>
+            <pre class="language-pascal"><code>
+procedure TForm1.Button1Click(Sender: TObject);
+    var
+        mensaje, formato:string;
+    begin
+        If OpenDialog1.execute then
+            begin
+                Edit1.text:=ExtractFileName(OpenDialog1.Filename);
+                Memo1.Clear;
+                Memo1.Lines.LoadFromFile(OpenDialog1.Filename);
+                formato:=formatofichero(Memo1.Lines[0]);
+                mensaje:='Se ha introducido un archivo con formato '+ formato;
+                ShowMessage(mensaje);
+                Edit2.Text:=formato;
+            end;
+    end;</code></pre>             
+    <br>     
+            <h2>3. Extraer secuencia del fichero</h2>
+            <p>Para extraer la secuencia de la proteína de los distintos ficheros, en el caso de los ficheros PDB he creado un procedimiento que 
+            reconoce ciertas líneas del PDB y extrae el código del aminoácido. Además, he desarrollado dos funciones más, una para extraer la 
+            secuencia de UniProt (función SecUniProt) y otra para extraer la de GenBank (función SecGenBank).</p>
+            <br>
+            <p><b>3.1. Función SecUniProt</b></p>
+            <p>En la función UniProt he incluido un bucle que vaya desde 0 hasta el número de líneas del fichero menos 1 puesto que el Memo empieza a contar 
+            desde 0. Para cada línea del memo, se recorre todo el bucle. En primer lugar, a la variable “línea” se le asigna el texto correspondiente al 
+            número de la línea del Memo que indique “j” (número de línea del Memo donde está cargado el fichero). En segundo lugar, el programa comprueba 
+            que en la posición 1 y 2 de la línea no aparezca “//” puesto que esto indica que ya ha acabado la secuencia de la proteína. Si no se ha reconocido, 
+            no se para el bucle y entonces la información que hay en línea se añade a la información que hay en “secuenciaUP”. Si la posición 1 y 2 de la línea 
+            contiene “SQ” indica que en la línea siguiente va a empezar la secuencia de la proteína por lo que vaciamos “secuenciaUP” puesto que en ella se habrá 
+            cargado todo el resto del texto. A partir de ese momento se va incluyendo la secuencia de la proteína en la variable “secuenciaUP” hasta llegar al final.</p>
+            <br>
+            <p>Uno de los problemas que he encontrado es que el fichero UniProt tiene espacios en blanco entre la secuencia de la proteína. Para eliminarlos, en el código 
+            se recorre otro bucle desde la posición 1 hasta la longitud de la cadena "secuenciaUP" que contiene la secuencia de la proteína con todos los espacios en blanco. 
+            En este bucle, cada carácter de la secuenciaB se añade a la variable "c". Si "c" es un espacio en blanco, gracias a la función delete, se elimina el espacio en 
+            blanco de la cadena.</p>
+            <br>
+            <p>Es importante añadir “trim” para quitar los espacios en blanco del principio y del final de la secuencia de la proteína.</p>
+            <br>
+            <p>La función UniProt desarrollada es:</p>
+            <pre class="language-pascal"><code>
+Function SecUniProt(Texto:Tstrings):string;
+    var
+        secuenciaUP, linea:string;
+        j:integer;
+    begin
+        secuenciaUP:='';
+        for j:=0 to Texto.Count-1 do
+            begin
+                linea:=Texto[j];
+                if linea[1..2]='//' then Break;
+                secuenciaUP:=secuenciaUP+trim(linea);
+                if linea[1..2]='SQ' then secuenciaUP:='';
+            end;
+        for k:=1 to length(secuenciaUP) do
+            begin
+                c:=secuenciaUP[k];
+                if c=' ' then delete(secuenciaUP,k,1)
+            end;
+        result:=trim(secuenciaUP);
+    end;     
+            </code></pre>             
+            <br>
+            <p><b>3.2. Función SecGenBank</b></p>
+            <p>Por otro lado, en la función SecGenBank también he incluido un bucle que recorre todo el fichero y la variable “línea” que engloba el texto correspondiente a 
+                la línea “j” del Memo. Si el texto que hay en la posición del 1 al 6 de la línea corresponde con la palabra “ORIGIN”, el bucle termina. He puesto la palabra 
+                “ORIGIN” puesto que es la palabra que hay después de que termine la secuencia de la proteína.</p>
+            <br>
+            <p>Si no se reconoce “ORIGIN” no se detiene el bucle y englobamos la línea en la variable secuenciaGB junto a las otras líneas que ya tengamos. Por último, si la 
+                posición de la línea 22 a 34 es “/translation=” entonces incluimos la posición 35 a 70 en la secuenciaGB, que son las posiciones de esa línea que corresponden 
+                a códigos de una letra de aminoácidos.</p>
+            <br>
+            <p>A continuación, se seguirán añadiendo las líneas a la secuenciaGB hasta llegar a ORIGIN, donde se detendrá. La función utilizada es: </p>
+            <pre class="language-pascal"><code>
+Function SecGenBank(Texto:Tstrings):string;
+    var
+        linea, secuenciaGB:string;
+        j:integer;
+    begin
+        secuenciaGB:='';
+        for j:=0 to Texto.Count-1 do
+            begin
+                linea:=Texto[j];
+                if linea[1..6]='ORIGIN' then Break;
+                secuenciaGB:=secuenciaGB+trim(linea);
+                if linea[22..34]='/translation=' then secuenciaGB:=linea[35..70];
+            end;
+        result:=trim(secuenciaGB);
+    end;  
+            </code></pre>             
+            <br>
+            <p><b>3.3. Procedimiento</b></p>
+            <p>Para mostrar la secuencia en el programa, he creado otro Memo y otro botón llamado “Secuencia”. Si se pulsa el botón “Secuencia”, se entra en el procedimiento. 
+                En primer lugar, se llama a la función “formatofichero” puesto que el método de obtener la secuencia de la proteína varía en función de si es un formato u otro. 
+                Si el formato es <b>PDB</b> el programa busca en el fichero las líneas ATOM y además, que esa línea sea la correspondiente a un carbono alfa, para asegurarnos de que solo 
+                copie el nombre del aminoácido cuando haya un nuevo residuo. En adición, sólo se escogen las líneas correspondientes a una subunidad, en el caso de que haya posiciones alternativas.
+                De esta manera, cuando se reconocen estas líneas, se añade el nombre del aminoácido en código de una letra (ID1). 
+                En el PDB aparece en código de 3 letras (ID3) pero para pasarlo a código de una letra, he utilizado la función AaTo1. Esta función busca el ID3 en la constante "Aa" y copia el 
+                ID1 correspondiente.</p>
+            <pre class="language-pascal"><code>
+Const
+    Aa='*****ALA=A#ARG=R#ASN=N#ASP=D#CYS=C#GLN=Q#GLU=E#GLY=G#HIS=H#'+
+       'ILE=I#LEU=L#LYS=K#MET=M#PHE=F#PRO=P#SER=S#THR=T#TRP=W#TYR=Y#VAL=V';
+            </code></pre>
+            <br>
+            <pre class="language-pascal"><code>
+Function Aa1To3(ID1:char):string;
+    begin
+        result:=Aa[pos(ID3,Aa)+4];
+    end;
+            </code></pre>
+            <br>
+            <p>La secuencia se va a añadir en un Memo. Utilizamos SelStart para que cuando aparezca la secuencia, el Memo no muestre en primera instancia las últimas filas de la secuencia si no que aparezca al principio. </p>
+            <br>
+            <p>Si el formato es <b>UniProt</b> entonces se carga la secuencia en la variable “secuenciaUP” y esto es lo que se añade al Memo. 
+            Mientras que si el formato es <b>GenBank</b> entonces se carga la secuencia en la variable “secuenciaGB” gracias a la función SecGenBank y esto es lo que sacamos en el Memo. El problema es que 
+            en la secuencia GenBank aparece con comillas al principio y al final. Para quitarlas, he indicado que lo que hay que añadir en el Memo es desde la posición 2 de la secuenciaGB 
+            (para quitar la primera comilla) hasta la posición correspondiente a la longitud de la secuenciaGB menos 1 (para quitar la última comilla).</p>
+            <br>
+            <p>El código que he utilizado para mostrar la secuencia ha sido:</p>
+            <pre class="language-pascal"><code>
+    procedure TForm1.Button2Click(Sender: TObject);
+        var
+            formato:string;
+            secuenciaUP, secuenciaGB:string;
+        begin
+            formato:=formatofichero(Memo1.Lines[0]);
+            secuenciaPDB:='';
+            if formato='PDB' then
+                begin
+                    for j:=0 to Memo1.Lines.Count-1 do
+                        begin
+                            linea:=Memo1.Lines[j];
+                            if (linea[1..6]='ATOM  ') and (linea[14..15]='CA') and (pos(linea[17],' A')>0) then 
+                            secuenciaPDB:=secuenciaPDB+Aa3to1(linea[18..20]);
+                        end;
+                    P:=CargarPDB(Memo1.Lines);
+                    Memo2.Clear;
+                    Memo2.Lines.Add(P.secuencia);
+                    Memo2.Lines.Add('');
+                    Memo2.SelStart:=0;
+                end else
+                    Memo2.Lines.Add(formato);
+                    begin
+                        if formato='UniProt' then
+                        begin
+                            secuenciaUP:=SecUniProt(Memo1.Lines);
+                            Memo2.Clear;
+                            Memo2.Lines.Add(trim(secuenciaUP));
+                            Memo2.SelStart:=0;
+                        end else
+                            begin
+                            if formato='GenBank' then
+                                begin
+                                secuenciaGB:=SecGenBank(Memo1.Lines);
+                                Memo2.Clear;
+                                Memo2.Lines.Add(trim(secuenciaGB[2..secuenciaGB.Length-1]));
+                                Memo2.SelStart:=0;
+                            end;
+                        end;
+                    end;
+                
+                end; 
+            </code></pre>             
+            <br>  
+            <h2>4. Visualización del programa</h2>
+            <p>A continuación he descargado los ficheros correspondientes al receptor del glucagón en formato PDB, GenBank y UniProt para comprobar que el programa funciona correctamente.</p>
+            <video src="videoformato.mov" alt="" class="anchoCompleto" controls></video>
+            <p>Por tanto, esta función es capaz de discriminar si el fichero introducido está en formato PDB, GenBank o UniProt y de extraer su secuencia.</p>
+        </div>      
+    </div>
+    <div class="barraCompleta">
+        <div class="contenidoBarra2">
+            <a href="index.html"><div class="anterior">
+                <img src="flechaIzquierdaBlanca.png" alt="flechita siguiente" class="iconoFlechaAnterior">
+                <div class="textoBarra">
+                    <p>Anterior</p>
+                    <h2>Revisión bibliográfica</h2>
+                </div>
+            </div></a>
+            <a href="parsing.html"><div class="siguiente">
+                <div class="textoBarra">
+                    <p>Siguiente</p>
+                    <h2>Parsing ficheros PDB</h2>
+                </div>
+                <img src="flechaDerechaBlanca.png" alt="flechita siguiente" class="iconoFlechaSiguiente">
+            </div></a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laura</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="prism.css" rel="stylesheet" />
+    <script src="prism.js"></script>
+</head>
+<body>
+    <div class="menuSuperior">
+        <img src="" alt="">
+        <h3>Cuaderno Ingeniería de Proteínas</h3>
+    </div>
+    <div class="contenedorPrincipal">
+        <div class="columnaIzquierda">
+            <div class="fixed">
+                <h4>Cuaderno Ingeniería de Proteínas</h4>
+                <a href="index.html">1. Revisión bibliográfica</a>
+                <a href="formato.html">2. Discriminar formato fichero y extraer secuencia</a>
+                <a href="parsing.html">3. Parsing ficheros PDB</a>
+                <a href="visualizacion.html">4. Visualización de las estructuras </a>
+                <a href="carbonosalfa.html">5. Carbonos alfa </a>
+                <a href="rama.html">6. Diagrama de Ramachandran</a>
+                <a href="estereo.html" class="activo">7. Estereodiagrama</a>
+                <a href="alinearz.html">8. Alinear Z</a>
+                <a href="rmsd.html">9. RMSD</a>
+                <a href="distorsion.html">10. Distorsiones estéricas </a>
+                <a href="disulfuro.html">11. Puentes disulfuro </a>
+            </div>
+        </div>
+        <div class="columnaCentro">
+            <h1>Estereodiagrama</h1>
+            <h5>Desarrollar un conjunto de funciones biotools que permitan calcular las coordenadas transformadas de cualquier átomo, a partir de las coordenadas originales 
+                y los datos referentes a la transformación (traslación o giro en torno a los ejes).  Emplear esta herramienta para  calcular y construir una aplicación Lazarus 
+                que permita obtener el estereodiagrama correspondiente a un fragmento definido de la proteína asignada. Verificar la corrección de las imágenes obtenidas mediante 
+                comparación con la función de visión estereoscópica de las que dispone RASMOL (o el visor equivalente que se emplee) e incluir en el informe algunas de las imágenes 
+                obtenidas más relevantes.</h5>
+            <br>
+            <p>Este programa pretende crear un estereodiagrama, es decir, crea un tipo de representación donde se muestra una imagen en dos dimensiones rotada en torno al eje Y (por defecto) un pequeño ángulo de 5º de manera que al visualizarse las dos una al lado de la otra se aprecie una imagen en 3D. Este programa utiliza una función para transformar las coordenadas de los átomos de la proteína y rotarlos un cierto ángulo que puede elegir el usuario.</p>
+            <br>
+            <p>Las funciones de giro sobre los distintos ejes se basan en las siguientes ecuaciones:</p>
+            <div class="imagenes"><img src="estereoformula.png" alt="" width=300></div>
+            <h4 class="pieImg">Fórmulas rotación en torno a distintos ejes. Extraída de las diapositivas facilitadas por el profesor.</h4>
+            <h2>1. Función giro OY</h2>
+            <p>Se define una función para girar sobre el eje Y para un punto, para un número "N" de Tpunto y para un PDB:</p>
+            <pre class="language-pascal"><code> 
+//FUNCION GIRO OY PARA UN PUNTO
+Function giroOY(rad:real; V:Tpunto):Tpunto;
+var
+    seno,coseno: real;
+begin
+    seno:=sin(rad);
+    coseno:=cos(rad);
+    giroOY.x:=V.x*coseno+V.z*seno;
+    giroOY.y:=V.Y;
+    giroOY.Z:=V.Z*coseno-V.Y*seno;
+end;
+//FUNCION GIRO OY PARA UN NUMERO "N" DE TPUNTO
+Function GiroOY(rad:real;puntos:Tpuntos):TPuntos;
+var
+    seno,coseno:real;
+    j:integer;
+    salida:TPuntos;
+    begin
+        setlength(salida,high(puntos)+1);
+        seno:=sin(rad);
+        coseno:=cos(rad);
+        for j:=0 to high(puntos) do
+        begin
+            salida[j].X:=puntos[j].X*coseno+puntos[j].Z*seno;
+            salida[j].Y:=puntos[j].Y;
+            salida[j].Z:=puntos[j].Z*coseno-puntos[j].X*seno;
+        end;
+        result:=salida;
+    end;
+//FUNCION GIRO OY PARA UN PDB
+procedure giroOY(rad:real; var P:TPDB);
+var
+    j:integer;
+    seno,coseno:real;
+    begin
+        seno:=sin(rad);
+        coseno:=cos(rad);
+        for j:=1 to P.NumFichas do
+        begin
+            P.Atm[j].Coor.X:=P.Atm[j].Coor.X*coseno+P.Atm[j].Coor.Z*seno;
+            P.Atm[j].Coor.Z:=P.Atm[j].Coor.Z*coseno-P.Atm[j].Coor.X*seno;
+        end;
+    end;
+        </code></pre>       
+        <h2>2. Procedimiento estereodiagrama</h2>  
+        <p>A continuación se crea un procedimiento para realizar un estereodiagrama. El programa contendrá un Memo donde se carga el fichero PDB, unos Spin Edits para introducir el CA inicial y el final del fragmento de la proteína del que queremos calcular el estereodiagrama y un FloatSpinEdit para introducir el ángulo de giro. Además, contendrá dos imágenes, una de la representación sin transformar y otra de la representación girada y transformada.</p>      
+        <br>
+        <pre class="language-pascal"><code>
+procedure TForm1.Button2Click(Sender: TObject);
+var
+    j:integer;
+begin
+    atm1:=SpinEdit1.Value;
+    atmN:=SpinEdit2.Value;
+    if atm1>atmN then
+    begin
+        j:=atm1;
+        atm1:=atmN;
+        atmN:=j;
+    end;
+    setlength(atmI,atmN-atm1+1);
+    setlength(atmT,atmN-atm1+1);
+    setlength(datos, 2, atmN-atm1+1);
+    for j:=atm1 to atmN do atmI[j-atm1]:=P.Atm[j].Coor;
+    for j:=0 to high(atmI) do
+    begin
+        datos[0,j]:=atmI[j].X;
+        datos[1,j]:=atmI[j].Y;
+    end;
+    PlotXY(datos,Image1.Canvas,0, 1,true,true);
+    atmT:=giroOY(FloatSpinEdit1.Value*pi/180,atmI);
+    for j:=0 to high(atmT) do
+        begin
+            datos[0,j]:=atmT[j].X;
+            datos[1,j]:=atmT[j].Y;
+        end;
+    PlotXY(datos,Image2.Canvas, 0, 1,true,true, clyellow, clyellow, clblack, true);
+end;
+        </code></pre>
+        <h2>3. Visualización del programa</h2>
+        <video src="videoestereo.mov" alt="" class="anchoCompleto" controls></video>
+        <h2>4. Conclusiones</h2>
+        <p>A continuación se muestra el estereodiagrama de los diez primeros residuos de la proteína obtenido en la aplicación de Lazarus, girado 5º:</p>
+        <div class="imagenes"><img src="estereolazarus.png" alt="" width=600></div>
+        <h4 class="pieImg">Estereodiagrama de los diez primeros residuos en Lazarus, girado 5º:</h4>
+        <p>Además, se ha realizado el estereodiagrama con JMOL. Esta herramienta permite obtener el estereodiagrama al clicar sobre "visión bizca" o "visión paralela" (aquella a la cual el ojo se adapta mejor) y, en ese caso, aparecen en JMOL dos moléculas, que al mirarlas se puede visualizar una imagen 3D.</p>
+        <div class="imagenes"><img src="estereojmolsingafas.png" alt="" width=600></div>
+        <h4 class="pieImg">Estereodiagrama de la proteína completa en JMOL en visión paralela.</h4>
+        <p>Asismismo, JMOl permite crear un estereodiagrama para verlo con gafas de visión estereoscópica donde aparecen dos imágenes ligeramente desfasadas como se puede ver a continuación:</p>
+        <div class="imagenes"><img src="estereojmolgafas.jpg" alt="" width=600></div>
+        <h4 class="pieImg">Estereodiagrama de la proteína completa en JMOL con "gafas rojo + cian".</h4>
+        <p>Como se puede observar, el estereodiagrama obtenido con Lazarus y el obtenido mediante JMOl son prácticamente iguales.</p>
+    </div>
+    </div>
+    <div class="barraCompleta">
+        <div class="contenidoBarra2">
+            <a href="rama.html"><div class="anterior">
+                <img src="flechaIzquierdaBlanca.png" alt="flechita siguiente" class="iconoFlechaAnterior">
+                <div class="textoBarra">
+                    <p>Anterior</p>
+                    <h2>Diagrama de Ramachandran</h2>
+                </div>
+            </div></a>
+            <a href="alinearz.html"><div class="siguiente">
+                <div class="textoBarra">
+                    <p>Siguiente</p>
+                    <h2>Alinear Z</h2>
+                </div>
+                <img src="flechaDerechaBlanca.png" alt="flechita siguiente" class="iconoFlechaSiguiente">
+            </div></a>
+        </div>
+    </div>
+</body>
+</html>
